@@ -1,7 +1,7 @@
 # FailureCast engineering readiness report
 
 **Assessment date:** 2026-10-10
-**Branch:** `codex/engineering-audit`
+**Branch:** `main`
 **Scope:** repository and API workflow, four-subset NASA C-MAPSS benchmark, local Compose deployment configuration, frontend production build, defensive checks, tests, and documentation. No production deployment or real-equipment data was used.
 
 ## 1. Project overview
@@ -79,13 +79,13 @@ The validation change addresses a metric/task mismatch: each held-out training e
 
 | Check | Result |
 | --- | --- |
-| Backend unit/API/worker/CLI/backup suite | **35 passed**, 0 failed, 0 skipped; one Starlette/httpx deprecation warning |
+| Backend unit/API/worker/CLI/backup suite | **35 passed**, 0 failed, 0 skipped; no deprecation warnings |
 | Frontend TypeScript + production Vite build | Passed; 2,166 modules transformed |
 | Python compilation | Passed |
 | Python dependency consistency (`pip check`) | Passed; no broken requirements |
 | Compose configuration parse | Passed |
 | Frontend dependency audit | `npm audit --audit-level=moderate`: 0 vulnerabilities; included in CI |
-| Python dependency audit | `pip-audit -r requirements.txt --strict`: no known vulnerabilities |
+| Python dependency audit | `pip-audit -r requirements-dev.txt -r requirements-deep-learning.txt --strict`: no known vulnerabilities |
 | Four-subset C-MAPSS benchmark | Completed; results and archive checksum recorded in the benchmark report |
 | Compose container startup and API smoke | Passed in isolated Podman Compose project; health/readiness, static page HTTP 200, production login, and overview verified |
 | Browser journeys | Playwright: 2 passed; welcome/sign-in, engine inspection, replay start/restart, candidate training, promotion, simulated evaluation, and rollback |
@@ -104,7 +104,7 @@ Set-Location ..
 python -m backend.app.cli benchmark --subset FD001 --train .\train_FD001.txt --test .\test_FD001.txt --rul .\RUL_FD001.txt
 ```
 
-Long-running soak, concurrent-host, and external penetration tests were not run. The 35-test suite has one Starlette/httpx deprecation warning; it does not fail the suite. The browser suite does not exercise dataset file upload; that route has backend/API coverage. Temporary credentials and the test backup archive were removed after verification; ignored isolated demo directories remain available for local reproduction.
+Long-running soak, concurrent-host, and external penetration tests were not run. All 35 backend tests pass without deprecation warnings after migrating the test client to `httpx2`. The browser suite does not exercise dataset file upload; that route has backend/API coverage. Temporary credentials and the test backup archive were removed after verification; ignored isolated demo directories remain available for local reproduction.
 
 ## 8. Security and reliability
 

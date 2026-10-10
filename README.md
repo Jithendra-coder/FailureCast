@@ -129,7 +129,7 @@ $env:FAILURECAST_E2E_PASSWORD = "<the test deployment administrator password>"
 npm run test:e2e
 ```
 
-For a local run, first start Compose with separate `FAILURECAST_DATA_DIR`, `FAILURECAST_ARTIFACT_DIR`, and `FAILURECAST_PORT` values so browser actions cannot affect a working workspace. CI checks Python dependencies with `pip-audit -r requirements.txt --strict` and all frontend dependencies with `npm audit --audit-level=moderate`.
+For a local run, first start Compose with separate `FAILURECAST_DATA_DIR`, `FAILURECAST_ARTIFACT_DIR`, and `FAILURECAST_PORT` values so browser actions cannot affect a working workspace. CI checks runtime, development, and optional deep-learning Python dependencies with `pip-audit -r requirements-dev.txt -r requirements-deep-learning.txt --strict`, and all frontend dependencies with `npm audit --audit-level=moderate`.
 
 With the same isolated workspace and credentials loaded into the environment, run `npm run demo:record` from `frontend` to create the captioned 1080p silent recording at `docs/demo-video/failurecast-demo.webm`. The recording queues training and changes model lifecycle state, so never target a user's workspace. The accompanying [demo narration script](docs/demo-video-script.md) is optional voiceover copy.
 
