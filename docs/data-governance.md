@@ -1,0 +1,9 @@
+# Data governance
+
+FailureCast accepts the official NASA C-MAPSS whitespace-delimited train, test, and RUL files for one subset at a time. Each accepted source file is written byte-for-byte under a content-derived version directory and hashed with SHA-256. An identical import resolves to the existing version. Raw data is not edited in place and is ignored by Git.
+
+The importer validates the fixed 26-column layout (engine ID, cycle, three operating settings, 21 sensors), finite numeric data, positive integer identifiers and cycles, duplicate engine-cycle pairs, monotonic cycles, and agreement between the test engine count and final-cycle RUL labels. It caps each source file at 20 MB and the import at 40 MB. Dataset metadata and quality summaries are stored in SQLite.
+
+Training labels are derived only from training trajectories. Features consist of operating settings, sensor readings, cycle, trailing-five means, and trailing deltas; windows do not cross engine boundaries. Validation engines are separated before fitting. Test labels are only used by the explicit post-selection evaluation endpoint. The demo data is generated locally and is not a NASA sample.
+
+NASA C-MAPSS contains simulated turbofan data. Review the dataset source terms and attribution before redistributing source data. The application stores no credentials and does not connect to equipment. See the [NASA PCoE dataset repository](https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/) and [NASA C-MAPSS dataset listing](https://data.nasa.gov/dataset/cmapss-jet-engine-simulated-data).

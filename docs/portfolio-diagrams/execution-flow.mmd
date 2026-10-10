@@ -1,0 +1,103 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, Segoe UI, Arial, sans-serif","fontSize":"18px","primaryColor":"#EFF6FF","primaryTextColor":"#0F172A","primaryBorderColor":"#2563EB","lineColor":"#64748B","secondaryColor":"#F0FDFA","tertiaryColor":"#F8FAFC","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"curve":"linear","htmlLabels":true,"nodeSpacing":34,"rankSpacing":48,"padding":16}}}%%
+flowchart TB
+  subgraph DIAGRAM["02 · END-TO-END EXECUTION FLOW<br/>How FailureCast moves a dataset through training, release, and prediction"]
+  direction TB
+  START(["Operator selects a dataset and imports C-MAPSS files"])
+  POLICY{"Request passes production security checks?"}
+  POLICY_DENIED["401 · missing / expired admin session<br/>403 · disallowed Origin on mutation"]
+  AUTH_NOTE["Admin authentication is enabled in Docker production"]
+  UPLOAD["POST /api/v1/datasets/import<br/>FD001–FD004 · train / test / RUL triplet"]
+  SIZE{"Within 20 MB per file<br/>and 40 MB total?"}
+  TOO_LARGE["HTTP 413 · upload rejected"]
+  PARSE["Parse and validate 26-column records<br/>finite values · ordered cycles · unique engine/cycle<br/>test engine count matches RUL labels"]
+  VALID{"Dataset valid?"}
+  BAD_DATA["HTTP 422 · invalid or incomplete import"]
+  FINGERPRINT["SHA-256 per file + combined content fingerprint"]
+  EXISTING{"Fingerprint already registered?"}
+  REUSE["Load and select existing dataset version"]
+  STAGE["Write staging directory<br/>atomic rename · SQLite dataset record"]
+  IO_FAIL["HTTP 500 · clean staging / moved files<br/>no committed version"]
+  DATASET["Dataset selected in API process"]
+  TRAIN_REQUEST["Operator explicitly starts training<br/>POST /api/v1/training/jobs"]
+  JOB_BUSY{"Another job is queued or running?"}
+  CONFLICT["HTTP 409 · keep the existing job"]
+  QUEUE[("SQLite training_jobs<br/>status = queued · HTTP 202")]
+  WORKER["Separate worker polls SQLite<br/>single file lock · BEGIN IMMEDIATE claim"]
+  TRAJECTORIES["Load complete training trajectories<br/>from selected dataset"]
+  FEATURES["Build capped RUL labels + trailing features<br/>windows stay within each engine"]
+  SPLIT["Seeded 80/20 holdout by engine ID<br/>official test labels reserved for post-selection evaluation"]
+  FIT["Fit selected estimator<br/>MeanBaseline · RandomForest · HistGradientBoosting<br/>optional PyTorch LSTM · 30-cycle window"]
+  METRICS["Calculate validation MAE · RMSE · bias · NASA score"]
+  CANDIDATE[("SQLite candidate record<br/>versioned artifact · experiment JSON")]
+  MLFLOW["Local MLflow run<br/>tracking failure becomes warning; training continues"]
+  TRAIN_ERROR["Training exception<br/>job marked failed · error saved · worker logs"]
+  RESTART["Worker startup re-queues interrupted running jobs<br/>job ID can recover an already registered candidate"]
+  REVIEW{"Valid engine-level report<br/>and explicit user approval?"}
+  HOLD["Candidate remains unpromoted<br/>active model stays in place"]
+  ACTIVE["Promotion transaction<br/>candidate becomes active · previous active retained<br/>audit event recorded"]
+  EVALUATE["Optional final-cycle test evaluation<br/>after model activation"]
+  HISTORY["User opens engine view or starts historical replay"]
+  INFER["API loads / caches active estimator<br/>and predicts from the selected history"]
+  NO_MODEL["HTTP 503 · no usable active model<br/>no estimate returned"]
+  WRITE_PRED["Replay step / POST /predictions<br/>stores prediction; applies configured thresholds<br/>suppresses duplicate open engine + severity alert"]
+  OVERVIEW["GET /overview and /engines<br/>returns current per-engine estimates"]
+  RESPONSE["JSON response reaches React dashboard<br/>workspace refreshes every 12 seconds"]
+  DRIFT["Monitoring side path: compare sensor distribution<br/>shift ≥ 3σ → investigate; no auto-training / promotion"]
+  REPLAY["Replay progress persists in SQLite<br/>browser advances with request-response polling"]
+
+  START --> POLICY
+  POLICY -->|Denied| POLICY_DENIED
+  POLICY_DENIED --- AUTH_NOTE
+  POLICY -->|Allowed / auth disabled in development| UPLOAD
+  UPLOAD --> SIZE
+  SIZE -->|No| TOO_LARGE
+  SIZE -->|Yes| PARSE
+  PARSE --> VALID
+  VALID -->|Invalid| BAD_DATA
+  VALID -->|Valid| FINGERPRINT
+  FINGERPRINT --> EXISTING
+  EXISTING -->|Yes| REUSE
+  EXISTING -->|No| STAGE
+  STAGE -->|I/O or DB failure| IO_FAIL
+  STAGE -->|Committed| DATASET
+  REUSE --> DATASET
+  DATASET --> TRAIN_REQUEST
+  TRAIN_REQUEST --> JOB_BUSY
+  JOB_BUSY -->|Yes| CONFLICT
+  JOB_BUSY -->|No · transaction inserts row| QUEUE
+  QUEUE -.->|durable async job · worker poll| WORKER
+  WORKER --> TRAJECTORIES --> FEATURES --> SPLIT --> FIT --> METRICS --> CANDIDATE
+  FIT -.->|Exception| TRAIN_ERROR
+  WORKER -.->|worker restart| RESTART
+  RESTART -.->|startup recovery| WORKER
+  CANDIDATE -.->|best-effort tracking| MLFLOW
+  CANDIDATE --> REVIEW
+  REVIEW -->|No / invalid report| HOLD
+  REVIEW -->|Yes| ACTIVE
+  ACTIVE --> EVALUATE
+  ACTIVE --> HISTORY
+  HISTORY --> INFER
+  INFER -->|Missing / broken model| NO_MODEL
+  INFER -->|Available| OVERVIEW
+  INFER -->|Replay step or prediction write| WRITE_PRED
+  OVERVIEW --> RESPONSE
+  WRITE_PRED --> RESPONSE
+  RESPONSE -.-> REPLAY
+  RESPONSE -.-> DRIFT
+  end
+
+  classDef start fill:#EFF6FF,stroke:#2563EB,color:#0F172A,stroke-width:1.8px;
+  classDef process fill:#F8FAFC,stroke:#64748B,color:#0F172A,stroke-width:1.4px;
+  classDef decision fill:#FFFBEB,stroke:#D97706,color:#78350F,stroke-width:1.7px;
+  classDef store fill:#F0FDFA,stroke:#0F766E,color:#134E4A,stroke-width:1.7px;
+  classDef success fill:#F0FDF4,stroke:#16A34A,color:#14532D,stroke-width:1.7px;
+  classDef error fill:#FEF2F2,stroke:#DC2626,color:#7F1D1D,stroke-width:1.5px;
+  classDef note fill:#F8FAFC,stroke:#94A3B8,color:#475569,stroke-width:1.2px;
+  class START,RESPONSE start;
+  class POLICY,SIZE,VALID,EXISTING,JOB_BUSY,REVIEW decision;
+  class QUEUE,CANDIDATE store;
+  class ACTIVE success;
+  class POLICY_DENIED,TOO_LARGE,BAD_DATA,IO_FAIL,CONFLICT,TRAIN_ERROR,NO_MODEL error;
+  class AUTH_NOTE,MLFLOW,EVALUATE,DRIFT,REPLAY note;
+  class UPLOAD,PARSE,FINGERPRINT,REUSE,STAGE,DATASET,TRAIN_REQUEST,WORKER,TRAJECTORIES,FEATURES,SPLIT,FIT,METRICS,HOLD,HISTORY,INFER,WRITE_PRED,OVERVIEW process;
+  style DIAGRAM fill:#FFFFFF,stroke:#FFFFFF,stroke-width:0px

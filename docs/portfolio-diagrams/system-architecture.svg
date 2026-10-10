@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+<title id="title">FailureCast system architecture</title><desc id="desc">Production-oriented view of FailureCast in a single-host Docker Compose deployment.</desc>
+<defs><marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#356AE6"/></marker><marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#718198"/></marker><marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#137D78"/></marker><marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#C94B4B"/></marker></defs>
+<rect width="1920" height="1080" fill="#F5F8FC"/>
+<text x="70" y="68" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="750" fill="#356AE6" text-anchor="start" letter-spacing="1.7">01 / SYSTEM ARCHITECTURE</text>
+<text x="70" y="125" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="43" font-weight="720" fill="#15263D" text-anchor="start" letter-spacing="0">FailureCast system architecture</text>
+<text x="70" y="164" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="19" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">A local-first predictive-maintenance platform for C-MAPSS remaining-useful-life workflows.</text>
+<rect x="1470" y="55" width="275.5" height="38" rx="19.0" fill="#EAF7F5" stroke="#EAF7F5" stroke-width="1"/>
+<text x="1607.75" y="79.25" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="650" fill="#137D78" text-anchor="middle" letter-spacing="0">SELF-HOSTED  /  DOCKER COMPOSE</text>
+<rect x="360" y="205" width="1490" height="775" rx="24" fill="#FAFCFF" stroke="#AFC1D5" stroke-width="2.2" stroke-dasharray="9 8"/>
+<rect x="390" y="185" width="275.5" height="38" rx="19.0" fill="#E7EEF7" stroke="#E7EEF7" stroke-width="1"/>
+<text x="527.75" y="209.25" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="650" fill="#15263D" text-anchor="middle" letter-spacing="0">DOCKER COMPOSE  ·  SINGLE HOST</text>
+<rect x="65" y="375" width="260" height="280" rx="18" fill="#FFFFFF" stroke="#D9E2EC" stroke-width="2"/>
+<rect x="65" y="375" width="7" height="280" rx="3.5" fill="#356AE6"/>
+<text x="89" y="414" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="21" font-weight="680" fill="#15263D" text-anchor="start" letter-spacing="0">Workspace browser</text>
+<text x="89" y="448" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">React 18 · TypeScript · Vite</text>
+<text x="89" y="479" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">8 workspace views</text>
+<text x="89" y="510" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Recharts + Lucide</text>
+<text x="89" y="541" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Operator-selected files</text>
+<text x="89" y="572" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">C-MAPSS import</text>
+<path d="M325 515 L410 450" fill="none" stroke="#356AE6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
+<rect x="275" y="450" width="98.65" height="29" rx="14.5" fill="#EEF3FF" stroke="#EEF3FF" stroke-width="1"/>
+<text x="324.325" y="469.05" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" font-weight="650" fill="#356AE6" text-anchor="middle" letter-spacing="0">REST / JSON</text>
+<rect x="410" y="275" width="450" height="265" rx="18" fill="#FFFFFF" stroke="#D9E2EC" stroke-width="2"/>
+<rect x="410" y="275" width="7" height="265" rx="3.5" fill="#356AE6"/>
+<text x="434" y="314" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="21" font-weight="680" fill="#15263D" text-anchor="start" letter-spacing="0">FastAPI  /  one Uvicorn process</text>
+<text x="434" y="348" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">REST /api/v1 with Pydantic request schemas</text>
+<text x="434" y="376" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Serves the production React build</text>
+<text x="434" y="404" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Import · inference · replay · alerts · registry</text>
+<rect x="432" y="445" width="407" height="80" rx="12" fill="#FFF8E9" stroke="#F0D7A8" stroke-width="1.5"/>
+<text x="450" y="468" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" font-weight="750" fill="#B76B12" text-anchor="start" letter-spacing="1.2">PRODUCTION SECURITY</text>
+<text x="450" y="490" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="550" fill="#76521B" text-anchor="start" letter-spacing="0">Required signed admin session · login throttle</text>
+<text x="450" y="512" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="550" fill="#76521B" text-anchor="start" letter-spacing="0">Origin allowlist · body limits · security headers</text>
+<rect x="950" y="285" width="390" height="230" rx="18" fill="#FFFFFF" stroke="#D9E2EC" stroke-width="2"/>
+<rect x="950" y="285" width="7" height="230" rx="3.5" fill="#137D78"/>
+<text x="974" y="324" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="23" font-weight="680" fill="#15263D" text-anchor="start" letter-spacing="0">SQLite  /  WAL</text>
+<text x="974" y="358" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Dataset + model registry</text>
+<text x="974" y="387" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Durable training job queue</text>
+<text x="974" y="416" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Predictions · alerts · audit</text>
+<text x="974" y="445" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Sessions · login attempts · replay</text>
+<rect x="1410" y="285" width="390" height="200" rx="18" fill="#FFFFFF" stroke="#D9E2EC" stroke-width="2"/>
+<rect x="1410" y="285" width="7" height="200" rx="3.5" fill="#137D78"/>
+<text x="1434" y="324" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="680" fill="#15263D" text-anchor="start" letter-spacing="0">Raw dataset versions</text>
+<text x="1434" y="358" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">data/raw/&lt;version&gt;/</text>
+<text x="1434" y="387" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Imported source bytes are preserved</text>
+<text x="1434" y="416" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">SHA-256 fingerprints avoid duplicates</text>
+<rect x="410" y="640" width="450" height="230" rx="18" fill="#FFFFFF" stroke="#D9E2EC" stroke-width="2"/>
+<rect x="410" y="640" width="7" height="230" rx="3.5" fill="#356AE6"/>
+<text x="434" y="679" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="680" fill="#15263D" text-anchor="start" letter-spacing="0">Separate training worker</text>
+<text x="434" y="713" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Polls SQLite; claims with BEGIN IMMEDIATE</text>
+<text x="434" y="742" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Single file lock prevents concurrent training</text>
+<text x="434" y="771" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Trains, validates, registers a candidate</text>
+<text x="434" y="800" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Startup recovery for interrupted jobs</text>
+<rect x="950" y="650" width="390" height="200" rx="18" fill="#FFFFFF" stroke="#D9E2EC" stroke-width="2"/>
+<rect x="950" y="650" width="7" height="200" rx="3.5" fill="#137D78"/>
+<text x="974" y="689" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="21" font-weight="680" fill="#15263D" text-anchor="start" letter-spacing="0">Model + experiment artifacts</text>
+<text x="974" y="723" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">artifacts/models/</text>
+<text x="974" y="752" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">artifacts/experiments/</text>
+<text x="974" y="781" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16.5" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Shared local volume for API + worker</text>
+<rect x="1410" y="650" width="390" height="205" rx="18" fill="#FFFFFF" stroke="#D9E2EC" stroke-width="2"/>
+<rect x="1410" y="650" width="7" height="205" rx="3.5" fill="#137D78"/>
+<text x="1434" y="689" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="21" font-weight="680" fill="#15263D" text-anchor="start" letter-spacing="0">Optional local MLflow</text>
+<text x="1434" y="723" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Tracking DB + run artifacts on disk</text>
+<text x="1434" y="751" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Optional UI binds to 127.0.0.1:5000</text>
+<text x="1434" y="779" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Tracking failure is a warning;</text>
+<text x="1434" y="807" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">successful training can continue</text>
+<path d="M860 397 L950 397" fill="none" stroke="#356AE6" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
+<rect x="869" y="360" width="77.4" height="27" rx="13.5" fill="#EEF3FF" stroke="#EEF3FF" stroke-width="1"/>
+<text x="907.7" y="377.7" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12" font-weight="650" fill="#356AE6" text-anchor="middle" letter-spacing="0">API state</text>
+<path d="M820 275 L820 240 L1605 240 L1605 285" fill="none" stroke="#137D78" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-teal)"/>
+<rect x="1070" y="222" width="291.70000000000005" height="28" rx="14.0" fill="#EAF7F5" stroke="#EAF7F5" stroke-width="1"/>
+<text x="1215.85" y="240.55" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" font-weight="650" fill="#137D78" text-anchor="middle" letter-spacing="0">validated import · staged atomic write</text>
+<path d="M1150 515 L1150 600 L635 600 L635 640" fill="none" stroke="#356AE6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+<rect x="840" y="579" width="255.95000000000002" height="28" rx="14.0" fill="#EEF3FF" stroke="#EEF3FF" stroke-width="1"/>
+<text x="967.975" y="597.55" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" font-weight="650" fill="#356AE6" text-anchor="middle" letter-spacing="0">durable job poll / claim / result</text>
+<path d="M1410 445 L1410 555 L360 555 L360 755 L410 755" fill="none" stroke="#137D78" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-teal)"/>
+<rect x="935" y="534" width="234.50000000000003" height="28" rx="14.0" fill="#EAF7F5" stroke="#EAF7F5" stroke-width="1"/>
+<text x="1052.25" y="552.55" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" font-weight="650" fill="#137D78" text-anchor="middle" letter-spacing="0">selected training trajectories</text>
+<path d="M860 755 L950 755" fill="none" stroke="#137D78" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-teal)"/>
+<rect x="863" y="718" width="77.4" height="27" rx="13.5" fill="#EAF7F5" stroke="#EAF7F5" stroke-width="1"/>
+<text x="901.7" y="735.7" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="12" font-weight="650" fill="#137D78" text-anchor="middle" letter-spacing="0">candidate</text>
+<path d="M860 675 L900 615 L1605 615 L1605 650" fill="none" stroke="#137D78" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-teal)"/>
+<rect x="1125" y="593" width="241.65" height="28" rx="14.0" fill="#EAF7F5" stroke="#EAF7F5" stroke-width="1"/>
+<text x="1245.825" y="611.55" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" font-weight="650" fill="#137D78" text-anchor="middle" letter-spacing="0">best-effort experiment tracking</text>
+<text x="410" y="920" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" font-weight="750" fill="#607086" text-anchor="start" letter-spacing="1.4">OPERATING SHAPE</text>
+<rect x="545" y="895" width="182.0" height="34" rx="17.0" fill="#EEF2F7" stroke="#EEF2F7" stroke-width="1"/>
+<text x="636.0" y="916.9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="650" fill="#15263D" text-anchor="middle" letter-spacing="0">one API + one worker</text>
+<rect x="830" y="895" width="305.20000000000005" height="34" rx="17.0" fill="#EEF2F7" stroke="#EEF2F7" stroke-width="1"/>
+<text x="982.6" y="916.9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="650" fill="#15263D" text-anchor="middle" letter-spacing="0">shared local data / artifact volumes</text>
+<rect x="1215" y="895" width="420.70000000000005" height="34" rx="17.0" fill="#EEF2F7" stroke="#EEF2F7" stroke-width="1"/>
+<text x="1425.35" y="916.9" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="650" fill="#15263D" text-anchor="middle" letter-spacing="0">non-root · read-only root · restricted capabilities</text>
+<text x="70" y="1030" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">The Compose configuration is single-host. Multi-host operation would need shared transactional storage, a distributed job queue, and shared artifacts.</text>
+</svg>

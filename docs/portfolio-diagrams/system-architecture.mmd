@@ -1,0 +1,70 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, Segoe UI, Arial, sans-serif","fontSize":"20px","primaryColor":"#EFF6FF","primaryTextColor":"#0F172A","primaryBorderColor":"#2563EB","lineColor":"#64748B","secondaryColor":"#F0FDFA","tertiaryColor":"#F8FAFC","clusterBkg":"#F8FAFC","clusterBorder":"#CBD5E1"},"flowchart":{"curve":"linear","htmlLabels":true,"nodeSpacing":30,"rankSpacing":42,"padding":18}}}%%
+flowchart LR
+  subgraph CLIENT["01 · EXPERIENCE · USER SPACE"]
+    direction TB
+    ADMIN(["Workspace administrator"])
+    BROWSER["React 18 · TypeScript · Vite<br/>Recharts · Lucide · 8 workspace views"]
+    FILES[/"Operator-selected C-MAPSS<br/>train / test / RUL file triplet"/]
+    ADMIN --> BROWSER
+    FILES --> BROWSER
+  end
+
+  subgraph APP["02 · APPLICATION · FAILURECAST API PROCESS"]
+    direction TB
+    FASTAPI["FastAPI · one Uvicorn process<br/>serves the production Vite build<br/>REST /api/v1 · Pydantic schemas"]
+    SECURITY["Production security middleware<br/>signed, expiring admin session · Origin allowlist<br/>login throttle · request bounds · security headers"]
+    HANDLERS["API modules<br/>C-MAPSS import + QA · RUL inference<br/>replay · alerts · registry · drift · audit"]
+    FASTAPI --> SECURITY --> HANDLERS
+  end
+
+  subgraph STATE["03 · LOCAL PERSISTENCE"]
+    direction TB
+    DB[("SQLite · WAL<br/>dataset + model registry · durable training_jobs<br/>predictions · alerts · audit · sessions · replay")]
+    RAW[("data/raw/&lt;version&gt;/<br/>byte-preserved imports<br/>per-file SHA-256")]
+  end
+
+  subgraph WORK["04 · ASYNCHRONOUS TRAINING · SEPARATE COMPOSE SERVICE"]
+    direction TB
+    WORKER["One lock-protected worker<br/>SQLite polling · BEGIN IMMEDIATE claim"]
+    FEATURES["Training-only labels + trailing features<br/>engine boundaries preserved"]
+    ESTIMATORS["MeanBaseline · RandomForest<br/>HistGradientBoosting<br/>optional PyTorch LSTM"]
+    VALIDATION["Seeded 80/20 split by engine ID<br/>candidate · metrics · experiment"]
+    WORKER --> FEATURES --> ESTIMATORS --> VALIDATION
+  end
+
+  subgraph OUTPUTS["05 · MODEL ARTIFACTS & TRACKING"]
+    direction TB
+    ARTIFACTS[("artifacts/models<br/>versioned estimator files<br/>artifacts/experiments")]
+    MLFLOW[("Local MLflow tracking<br/>artifacts/mlflow.db + mlartifacts")]
+    MLFLOWUI["Optional MLflow UI<br/>host port 127.0.0.1:5000"]
+    MLFLOW --> MLFLOWUI
+  end
+
+  BROWSER <-->|"same-origin REST / JSON<br/>static assets served by FastAPI"| FASTAPI
+  HANDLERS -->|"durable job row · dataset metadata<br/>prediction / alert / audit state"| DB
+  HANDLERS -->|"validated import"| RAW
+  DB <-->|"queued job · poll / claim<br/>job state + result"| WORKER
+  RAW -->|"selected training trajectories"| FEATURES
+  VALIDATION -->|"candidate registry row"| DB
+  VALIDATION -->|"candidate estimator"| ARTIFACTS
+  VALIDATION -->|"run parameters · metrics · artifacts"| MLFLOW
+
+  classDef actor fill:#FFFFFF,stroke:#94A3B8,color:#0F172A,stroke-width:1.5px;
+  classDef interface fill:#EFF6FF,stroke:#2563EB,color:#0F172A,stroke-width:1.8px;
+  classDef service fill:#F8FAFC,stroke:#64748B,color:#0F172A,stroke-width:1.6px;
+  classDef security fill:#FFFBEB,stroke:#D97706,color:#78350F,stroke-width:1.8px;
+  classDef store fill:#F0FDFA,stroke:#0F766E,color:#134E4A,stroke-width:1.7px;
+  classDef model fill:#F0FDF4,stroke:#16A34A,color:#14532D,stroke-width:1.6px;
+  classDef optional fill:#F8FAFC,stroke:#94A3B8,color:#475569,stroke-width:1.4px;
+  class ADMIN,FILES actor;
+  class BROWSER,FASTAPI interface;
+  class SECURITY security;
+  class HANDLERS,WORKER,FEATURES,ESTIMATORS,VALIDATION service;
+  class DB,RAW,ARTIFACTS,MLFLOW store;
+  class MLFLOWUI optional;
+  class ESTIMATORS,VALIDATION model;
+  style CLIENT fill:#FFFFFF,stroke:#CBD5E1,stroke-width:1.4px
+  style APP fill:#FFFFFF,stroke:#CBD5E1,stroke-width:1.4px
+  style STATE fill:#FFFFFF,stroke:#CBD5E1,stroke-width:1.4px
+  style WORK fill:#FFFFFF,stroke:#CBD5E1,stroke-width:1.4px
+  style OUTPUTS fill:#FFFFFF,stroke:#CBD5E1,stroke-width:1.4px

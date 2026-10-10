@@ -1,0 +1,58 @@
+x-app: &app
+  image: failurecast:local
+  build: .
+  user: "${FAILURECAST_UID:-1000}:${FAILURECAST_GID:-1000}"
+  environment: &app-environment
+    FAILURECAST_DB: /app/artifacts/failurecast.sqlite3
+    MLFLOW_TRACKING_URI: sqlite:////app/artifacts/mlflow.db
+    FAILURECAST_TRAIN_DEVICE: ${FAILURECAST_TRAIN_DEVICE:-auto}
+    FAILURECAST_LOG_LEVEL: ${FAILURECAST_LOG_LEVEL:-INFO}
+    FAILURECAST_WATCH_CYCLES: ${FAILURECAST_WATCH_CYCLES:-60}
+    FAILURECAST_WARNING_CYCLES: ${FAILURECAST_WARNING_CYCLES:-30}
+    FAILURECAST_CRITICAL_CYCLES: ${FAILURECAST_CRITICAL_CYCLES:-15}
+    FAILURECAST_WORKER_POLL_SECONDS: ${FAILURECAST_WORKER_POLL_SECONDS:-1}
+  volumes:
+    - ./data:/app/data
+    - ./artifacts:/app/artifacts
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 256
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=128m
+
+services:
+  failurecast:
+    <<: *app
+    environment:
+      <<: *app-environment
+      FAILURECAST_ENV: production
+      FAILURECAST_ADMIN_PASSWORD: ${FAILURECAST_ADMIN_PASSWORD:?Copy .env.example to .env and set a unique admin password}
+      FAILURECAST_SECRET_KEY: ${FAILURECAST_SECRET_KEY:?Set a unique random FAILURECAST_SECRET_KEY in .env}
+      FAILURECAST_COOKIE_SECURE: ${FAILURECAST_COOKIE_SECURE:-false}
+      FAILURECAST_ALLOWED_ORIGINS: ${FAILURECAST_ALLOWED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/ready', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 180s
+      retries: 3
+
+  worker:
+    <<: *app
+    command: ["python", "-m", "backend.app.worker"]
+    depends_on:
+      failurecast:
+        condition: service_healthy
+
+  mlflow:
+    <<: *app
+    command: ["mlflow", "ui", "--backend-store-uri", "sqlite:////app/artifacts/mlflow.db", "--host", "0.0.0.0", "--port", "5000"]
+    ports:
+      - "127.0.0.1:5000:5000"
+    depends_on:
+      failurecast:
+        condition: service_healthy
