@@ -7,8 +7,8 @@ flowchart LR
   API -->|durable job row| QUEUE[SQLite training queue]
   QUEUE --> WORKER[Single training worker]
   WORKER --> DB
-  WORKER --> TRAIN[Engine-held-out training]
-  API --> RAW[Immutable local C-MAPSS files]
+  WORKER --> TRAIN[Engine holdout · censored endpoint validation · full-data refit]
+  API --> RAW[Immutable C-MAPSS files · SHA-256 restore checks]
   RAW --> PIPE[Validation and trailing features]
   PIPE --> TRAIN
   TRAIN --> ART[Versioned model artifacts]
@@ -20,13 +20,13 @@ flowchart LR
   MON[Distribution shift review] --> UI
 ```
 
-Training requests are written to SQLite before returning and claimed by a separate worker. A worker restart re-queues interrupted work; job IDs on candidates let a retry complete an already registered model without creating a duplicate. Training uses only complete train trajectories. The holdout is by engine ID, and rolling features use current and prior observations from that engine. The official test split is evaluated only after model activation, using the final observed test cycle and its supplied RUL. Inference runs in the API process and does not train inside a prediction request. A new training run registers a candidate; promotion requires an explicit approval request and preserves the prior active model for rollback.
+Training requests are written to SQLite before returning and claimed by a separate worker. A worker restart re-queues interrupted work; job IDs on candidates let a retry complete an already registered model without creating a duplicate. Training uses only complete train trajectories. A seeded holdout by engine ID evaluates one censored observation at 80% of each held-out trajectory; rolling features use only current and prior observations from that engine. After validation, the candidate artifact is refit on all training engines. Imported source checksums and their combined fingerprint are rechecked during restore. The official test split is evaluated only after model activation, using the final observed test cycle and its supplied RUL. Inference, replay, promotion, rollback, and test evaluation are bound to the exact dataset version recorded on the model. Selecting another dataset pauses forecasting until a compatible model is activated. Inference runs in the API process and does not train inside a prediction request. A new training run registers a candidate; promotion requires an explicit approval request and preserves the prior active model for rollback within its dataset version.
 
 The default local demo trains a deterministic HistGradientBoosting model from generated trajectories. Dataset import keeps NASA files separate and does not claim that demo metrics are NASA results. The dashboard uses request-response polling for its replay demonstration; it is not a real-time industrial telemetry transport. Replay histories and positions are persisted in SQLite so service restarts do not discard active sessions.
 
 ## Deployment boundary
 
-Production Compose uses one API process and one worker on a local filesystem with SQLite WAL. Admin access uses an expiring signed cookie, origin checks, and login throttling. The built-in deployment is a single-host research service; scaling to multiple hosts requires shared transactional storage, a distributed job queue, shared artifact storage, and an external identity provider. C-MAPSS is simulated turbofan data, so this service is not validated for maintenance decisions or equipment control.
+Production Compose uses one API process and one worker on a local filesystem with SQLite WAL. Admin access uses an expiring signed cookie, origin checks, and login throttling. Readiness reports whether inference is available independently from whether the API can accept training work. Alerts and replay sessions are scoped to their dataset version; replay also retains the model version used for each run. The built-in deployment is a single-host research service; scaling to multiple hosts requires shared transactional storage, a distributed job queue, shared artifact storage, and an external identity provider. C-MAPSS is simulated turbofan data, so this service is not validated for maintenance decisions or equipment control.
 
 ## Process boundaries
 

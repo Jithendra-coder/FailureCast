@@ -138,15 +138,30 @@ def state() -> dict:
     return app.state.data
 
 
-def active_model() -> dict:
+def active_model(dataset_id: str | None = None) -> dict:
     model = db.one("SELECT * FROM models WHERE status='active' ORDER BY created_at DESC LIMIT 1")
     if not model:
         raise HTTPException(503, "No active model is available.")
-    return db.decode(model, "metrics")
+    model = db.decode(model, "metrics")
+    selected_id = dataset_id or current_dataset()["id"]
+    if model.get("dataset_id") != selected_id:
+        raise HTTPException(409, f"No active model is trained for dataset {selected_id}. Train and approve a model for this dataset first.")
+    return model
 
 
 def current_dataset() -> dict:
-    return state()["current"]
+    if getattr(app.state, "startup_dataset_error", None):
+        raise HTTPException(503, "The stored dataset could not be restored.")
+    with _lock:
+        return state()["current"]
+
+
+def current_dataset_alerts(limit: int = 100, dataset_id: str | None = None) -> list[dict]:
+    with db.connect() as connection:
+        return [dict(row) for row in connection.execute(
+            "SELECT a.* FROM alerts a JOIN predictions p ON p.id=substr(a.id, 4) "
+            "JOIN models m ON m.id=p.model_id WHERE m.dataset_id=? ORDER BY a.created_at DESC LIMIT ?",
+            (dataset_id or current_dataset()["id"], limit))]
 
 
 def level(rul: float) -> str:
@@ -159,9 +174,9 @@ def level(rul: float) -> str:
     return "normal"
 
 
-def resolve_engine(engine_id: str) -> dict:
+def resolve_engine(engine_id: str, dataset: dict | None = None) -> dict:
     normalized = str(engine_id).upper()
-    for engine in current_dataset()["engines"]:
+    for engine in (dataset or current_dataset())["engines"]:
         if engine["id"].upper() == normalized or str(engine["engine_id"]) == normalized:
             return engine
     raise HTTPException(404, "Engine was not found in the selected dataset.")
@@ -184,8 +199,11 @@ def register_prediction(engine_id: str, cycle: int, rul: float, model_id: str) -
         connection.execute("INSERT INTO predictions (id, engine_id, model_id, cycle, rul, created_at) VALUES (?, ?, ?, ?, ?, ?)",
                            (prediction_id, engine_id, model_id, cycle, rul, created_at))
         if severity != "normal":
-            duplicate = connection.execute("SELECT id FROM alerts WHERE engine_id=? AND status='open' AND severity=? LIMIT 1",
-                                            (engine_id, severity)).fetchone()
+            duplicate = connection.execute(
+                "SELECT a.id FROM alerts a JOIN predictions p ON p.id=substr(a.id, 4) "
+                "JOIN models m ON m.id=p.model_id WHERE a.engine_id=? AND a.status='open' AND a.severity=? "
+                "AND m.dataset_id=(SELECT dataset_id FROM models WHERE id=?) LIMIT 1",
+                (engine_id, severity, model_id)).fetchone()
             if not duplicate:
                 connection.execute("INSERT INTO alerts (id, engine_id, severity, status, predicted_rul, cycle, created_at) VALUES (?, ?, ?, 'open', ?, ?, ?)",
                                    (f"al-{prediction_id}", engine_id, severity, round(rul, 1), cycle, created_at))
@@ -213,9 +231,17 @@ def load_uploaded_dataset(row: dict) -> dict:
         raise ValueError("Stored dataset path is outside the raw data directory.")
     subset = row["subset"]
     train_path, test_path, rul_path = raw_path / f"train_{subset}.txt", raw_path / f"test_{subset}.txt", raw_path / f"RUL_{subset}.txt"
-    train = parse_cmapss(train_path.read_bytes(), train_path.name)
-    test = parse_cmapss(test_path.read_bytes(), test_path.name)
-    rul = parse_rul(rul_path.read_bytes(), rul_path.name)
+    contents = {path.name: path.read_bytes() for path in (train_path, test_path, rul_path)}
+    checksums = {name: sha256(content) for name, content in contents.items()}
+    fingerprint = sha256("".join(checksums[name] for name in sorted(checksums)).encode())
+    if fingerprint != row["checksum"]:
+        raise ValueError("Stored dataset files do not match the registered SHA-256 fingerprint.")
+    quality = json.loads(row["quality"])
+    if checksums != quality.get("checksum_by_file", checksums):
+        raise ValueError("Stored dataset file checksums do not match their registered metadata.")
+    train = parse_cmapss(contents[train_path.name], train_path.name)
+    test = parse_cmapss(contents[test_path.name], test_path.name)
+    rul = parse_rul(contents[rul_path.name], rul_path.name)
     engines = make_dataset_engines(test, rul)
     for engine in engines:
         engine["subset"] = subset
@@ -248,8 +274,9 @@ def startup() -> None:
             app.state.data["versions"][restored["id"]] = restored
         except (OSError, ValueError) as exc:
             app.state.startup_dataset_error = str(exc)
-    bootstrap_model(app.state.data["demo"]["train_records"])
-    if not db.one("SELECT id FROM predictions LIMIT 1"):
+    bootstrap_model(app.state.data["demo"]["train_records"], app.state.data["demo"]["id"])
+    active = db.one("SELECT * FROM models WHERE status='active' ORDER BY created_at DESC LIMIT 1")
+    if not app.state.startup_dataset_error and not db.one("SELECT id FROM predictions LIMIT 1") and active and active.get("dataset_id") == current_dataset()["id"]:
         model = active_model()
         for engine in current_dataset()["engines"]:
             register_prediction(engine["id"], engine["cycle"], predict(model, engine["history"]), model["id"])
@@ -294,11 +321,19 @@ def ready():
         raise HTTPException(503, "The stored dataset could not be restored.")
     try:
         db.one("SELECT 1 AS ready")
-        load_estimator(active_model())
-        current_dataset()
+        dataset_id = current_dataset()["id"]
     except Exception as exc:
         raise HTTPException(503, "Service dependencies are not ready.") from exc
-    return {"status": "ready", "service": "failurecast-api"}
+    model = db.one("SELECT * FROM models WHERE status='active' ORDER BY created_at DESC LIMIT 1")
+    model_status = "training_required"
+    if model and model.get("dataset_id") == dataset_id:
+        try:
+            load_estimator(db.decode(model, "metrics"))
+            model_status = "ready"
+        except Exception:
+            model_status = "unavailable"
+    return {"status": "ready", "service": "failurecast-api", "dataset_id": dataset_id,
+            "model_status": model_status, "inference_ready": model_status == "ready"}
 
 
 @app.get("/api/v1/auth/session")
@@ -346,9 +381,24 @@ def logout(request: Request):
 
 @app.get("/api/v1/overview")
 def overview():
-    dataset, model = current_dataset(), active_model()
+    dataset = current_dataset()
+    try:
+        model = active_model(dataset["id"])
+    except HTTPException as exc:
+        if exc.status_code != 409:
+            raise
+        alerts = current_dataset_alerts(dataset_id=dataset["id"])
+        return {"dataset": {"id": dataset["id"], "name": dataset["name"], "subset": dataset["subset"],
+                            "source": dataset["source"], "quality": dataset["quality"]},
+                "model": None, "model_ready": False, "model_message": exc.detail,
+                "summary": {"engines": len(dataset["engines"]), "critical": 0, "watch": 0,
+                            "open_alerts": sum(alert["status"] == "open" for alert in alerts),
+                            "median_rul": None, "running_replays": 0},
+                "engines": [], "alerts": alerts[:8], "series": [], "selected_engine": None,
+                "thresholds": ALERT_THRESHOLDS,
+                "simulation_only": dataset["source"] == "Generated local demo data"}
     engines = [serialize_engine(engine, model) for engine in dataset["engines"]]
-    alerts = db.rows("alerts", 100)
+    alerts = current_dataset_alerts(dataset_id=dataset["id"])
     selected = dataset["engines"][min(3, len(dataset["engines"]) - 1)]
     history = selected["history"]
     stride = max(1, len(history) // 45)
@@ -369,11 +419,12 @@ def overview():
         series.append(point)
     open_alerts = [alert for alert in alerts if alert["status"] == "open"]
     return {"dataset": {"id": dataset["id"], "name": dataset["name"], "subset": dataset["subset"], "source": dataset["source"], "quality": dataset["quality"]},
-            "model": {"id": model["id"], "algorithm": model["algorithm"], "status": model["status"], "metrics": model["metrics"]},
+            "model": {"id": model["id"], "dataset_id": model["dataset_id"], "algorithm": model["algorithm"], "status": model["status"], "metrics": model["metrics"]},
+            "model_ready": True,
             "summary": {"engines": len(engines), "critical": sum(e["health"] == "critical" for e in engines),
                         "watch": sum(e["health"] in ("warning", "watch") for e in engines), "open_alerts": len(open_alerts),
                         "median_rul": round(float(np.median([engine["rul"] for engine in engines])), 1),
-                        "running_replays": sum(item["status"] == "running" for item in _replays.values())},
+                        "running_replays": sum(item["status"] == "running" and item.get("dataset_id") == dataset["id"] for item in _replays.values())},
             "engines": engines, "alerts": alerts[:8], "series": series, "selected_engine": selected["id"],
             "thresholds": ALERT_THRESHOLDS, "simulation_only": dataset["source"] == "Generated local demo data"}
 
@@ -472,14 +523,16 @@ async def import_dataset(files: list[UploadFile] = File(...), subset: str = Form
 
 @app.get("/api/v1/engines")
 def engines():
-    model = active_model()
-    return {"items": [serialize_engine(engine, model) for engine in current_dataset()["engines"]]}
+    dataset = current_dataset()
+    model = active_model(dataset["id"])
+    return {"items": [serialize_engine(engine, model) for engine in dataset["engines"]]}
 
 
 @app.get("/api/v1/engines/{engine_id}/history")
 def engine_history(engine_id: str):
-    engine = resolve_engine(engine_id)
-    model = active_model()
+    dataset = current_dataset()
+    engine = resolve_engine(engine_id, dataset)
+    model = active_model(dataset["id"])
     rows = engine["history"]
     estimate = predict(model, rows)
     return {"engine": serialize_engine(engine, model), "history": rows, "prediction": round(estimate, 1),
@@ -562,9 +615,15 @@ def promote_model(model_id: str, request: PromotionRequest):
     candidate = db.one("SELECT * FROM models WHERE id=?", (model_id,))
     if not candidate or candidate["status"] != "candidate":
         raise HTTPException(409, "Only a registered candidate model can be promoted.")
+    if candidate.get("dataset_id") != current_dataset()["id"]:
+        raise HTTPException(409, "A candidate can only be promoted for the currently selected dataset version.")
     metrics = json.loads(candidate["metrics"])
     if not metrics.get("validation_engines", 0) or not np.isfinite(metrics.get("mae", float("nan"))):
         raise HTTPException(409, "Candidate has no valid engine-level validation report.")
+    try:
+        load_estimator(candidate)
+    except Exception as exc:
+        raise HTTPException(409, "Candidate model artifact is unavailable or invalid.") from exc
     with db.connect() as connection:
         connection.execute("UPDATE models SET status='approved' WHERE status='active'")
         connection.execute("UPDATE models SET status='active' WHERE id=?", (model_id,))
@@ -575,10 +634,14 @@ def promote_model(model_id: str, request: PromotionRequest):
 
 @app.post("/api/v1/models/{model_id}/evaluate")
 def evaluate_active_model(model_id: str):
-    model = db.decode(db.one("SELECT * FROM models WHERE id=?", (model_id,)), "metrics")
-    if not model or model["status"] != "active":
+    requested = db.one("SELECT id,status FROM models WHERE id=?", (model_id,))
+    if not requested or requested["status"] != "active":
         raise HTTPException(409, "Only the active, selected model can be evaluated against the official test protocol.")
-    labeled = [engine for engine in current_dataset()["engines"] if engine.get("rul") is not None]
+    dataset = current_dataset()
+    model = active_model(dataset["id"])
+    if model["id"] != model_id:
+        raise HTTPException(409, "Only the active, selected model can be evaluated against the official test protocol.")
+    labeled = [engine for engine in dataset["engines"] if engine.get("rul") is not None]
     if not labeled:
         raise HTTPException(409, "The selected dataset has no final-cycle RUL ground truth.")
     actual, predicted = [], []
@@ -586,9 +649,9 @@ def evaluate_active_model(model_id: str):
         actual.append(float(engine["rul"]))
         predicted.append(predict(model, engine["history"]))
     report = metrics_for(actual, predicted)
-    simulation = current_dataset()["source"] == "Generated local demo data"
+    simulation = dataset["source"] == "Generated local demo data"
     report.update({"protocol": "simulated final cycle + generated RUL labels" if simulation else "final observed cycle + supplied RUL_FD00x labels",
-                   "simulation_only": simulation, "test_engines": len(labeled), "dataset_id": current_dataset()["id"],
+                   "simulation_only": simulation, "test_engines": len(labeled), "dataset_id": dataset["id"],
                    "model_id": model_id, "evaluated_at": utcnow()})
     db.execute("INSERT INTO audit_events (action, model_id, created_at, details) VALUES (?, ?, ?, ?)",
                ("official_test_evaluation", model_id, utcnow(), json.dumps(report)))
@@ -597,31 +660,36 @@ def evaluate_active_model(model_id: str):
 
 @app.post("/api/v1/models/rollback")
 def rollback_model():
-    previous = db.one("SELECT * FROM models WHERE status='approved' ORDER BY created_at DESC LIMIT 1")
-    current = active_model()
+    dataset_id = current_dataset()["id"]
+    current = db.one("SELECT id FROM models WHERE status='active'")
+    previous = db.one("SELECT * FROM models WHERE status='approved' AND dataset_id=? ORDER BY created_at DESC LIMIT 1", (dataset_id,))
     if not previous:
-        raise HTTPException(409, "No previously active approved model is available for rollback.")
+        raise HTTPException(409, "No previously approved model is available for the selected dataset version.")
     try:
         load_estimator(previous)
     except (OSError, ValueError, KeyError) as exc:
         raise HTTPException(409, f"Rollback model is unavailable: {exc}") from exc
     with db.connect() as connection:
-        connection.execute("UPDATE models SET status='approved' WHERE id=?", (current["id"],))
+        connection.execute("UPDATE models SET status='approved' WHERE status='active'")
         connection.execute("UPDATE models SET status='active' WHERE id=?", (previous["id"],))
         connection.execute("INSERT INTO audit_events (action, model_id, created_at, details) VALUES (?, ?, ?, ?)",
-                           ("rollback", previous["id"], utcnow(), json.dumps({"from": current["id"]})))
-    return {"id": previous["id"], "status": "active", "restored_from": current["id"]}
+                           ("rollback", previous["id"], utcnow(), json.dumps({"dataset_id": dataset_id,
+                                                                               "from": current["id"] if current else None})))
+    return {"id": previous["id"], "status": "active", "dataset_id": dataset_id,
+            "restored_from": current["id"] if current else None}
 
 
 @app.get("/api/v1/alerts")
 def alerts():
-    items = db.rows("alerts", 100)
+    items = current_dataset_alerts(dataset_id=current_dataset()["id"])
     return {"items": items, "thresholds": ALERT_THRESHOLDS}
 
 
 @app.post("/api/v1/alerts/{alert_id}/acknowledge")
 def acknowledge_alert(alert_id: str):
-    alert = db.one("SELECT * FROM alerts WHERE id=?", (alert_id,))
+    alert = db.one("SELECT a.* FROM alerts a JOIN predictions p ON p.id=substr(a.id, 4) "
+                   "JOIN models m ON m.id=p.model_id WHERE a.id=? AND m.dataset_id=?",
+                   (alert_id, current_dataset()["id"]))
     if not alert:
         raise HTTPException(404, "Alert was not found.")
     if alert["status"] == "open":
@@ -633,20 +701,24 @@ def acknowledge_alert(alert_id: str):
 
 @app.post("/api/v1/replay/sessions", status_code=201)
 def start_replay(request: ReplayRequest):
-    engine = resolve_engine(request.engine_id)
-    replay_id = f"replay-{uuid.uuid4().hex[:8]}"
     with _lock:
+        dataset = current_dataset()
+        model = active_model(dataset["id"])
+        engine = resolve_engine(request.engine_id, dataset)
+        replay_id = f"replay-{uuid.uuid4().hex[:8]}"
         _replays[replay_id] = {"id": replay_id, "engine_id": engine["id"], "position": 0, "speed": request.speed,
-                               "status": "running", "history": engine["history"], "created_at": utcnow(), "latest": None}
+                               "status": "running", "history": engine["history"], "created_at": utcnow(), "latest": None,
+                               "dataset_id": dataset["id"], "model_id": model["id"]}
         persist_replay(_replays[replay_id])
     return replay_status(replay_id)
 
 
 def persist_replay(session: dict) -> None:
-    db.execute("INSERT INTO replay_sessions (id, engine_id, position, speed, status, history, latest, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
-               "ON CONFLICT(id) DO UPDATE SET position=excluded.position, speed=excluded.speed, status=excluded.status, history=excluded.history, latest=excluded.latest",
+    db.execute("INSERT INTO replay_sessions (id, engine_id, position, speed, status, history, latest, created_at, dataset_id, model_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+               "ON CONFLICT(id) DO UPDATE SET position=excluded.position, speed=excluded.speed, status=excluded.status, history=excluded.history, latest=excluded.latest, dataset_id=excluded.dataset_id, model_id=excluded.model_id",
                (session["id"], session["engine_id"], session["position"], session["speed"], session["status"],
-                json.dumps(session["history"]), json.dumps(session["latest"]) if session["latest"] else None, session["created_at"]))
+                json.dumps(session["history"]), json.dumps(session["latest"]) if session["latest"] else None, session["created_at"],
+                session.get("dataset_id"), session.get("model_id")))
 
 
 def replay_status(replay_id: str) -> dict:
@@ -658,7 +730,9 @@ def replay_status(replay_id: str) -> dict:
 
 @app.get("/api/v1/replay/sessions")
 def replay_sessions():
-    items = sorted((replay_status(replay_id) for replay_id in _replays), key=lambda item: item["created_at"], reverse=True)
+    dataset_id = current_dataset()["id"]
+    items = sorted((replay_status(replay_id) for replay_id, session in _replays.items()
+                    if session.get("dataset_id") == dataset_id), key=lambda item: item["created_at"], reverse=True)
     return {"items": items[:20]}
 
 
@@ -675,6 +749,8 @@ def replay_action(replay_id: str, action: str):
     if not session:
         raise HTTPException(404, "Replay session was not found.")
     with _lock:
+        if session.get("dataset_id") != current_dataset()["id"]:
+            raise HTTPException(409, "This replay belongs to a different dataset version. Start a new replay for the selected dataset.")
         if action == "pause":
             session["status"] = "paused"
         elif action == "resume":
@@ -685,7 +761,9 @@ def replay_action(replay_id: str, action: str):
             if session["position"] < len(session["history"]):
                 next_position = session["position"] + 1
                 sequence = session["history"][:next_position]
-                model = active_model()
+                model = db.decode(db.one("SELECT * FROM models WHERE id=?", (session.get("model_id"),)), "metrics")
+                if not model or model.get("dataset_id") != session["dataset_id"]:
+                    raise HTTPException(409, "The replay model is no longer available for this dataset version.")
                 estimate = predict(model, sequence)
                 observation = {"cycle": sequence[-1]["cycle"], "sensor_2": sequence[-1]["sensor_2"],
                                "sensor_3": sequence[-1]["sensor_3"], "sensor_7": sequence[-1]["sensor_7"],
@@ -701,12 +779,13 @@ def replay_action(replay_id: str, action: str):
 
 @app.get("/api/v1/monitoring/drift")
 def drift():
-    baseline = current_dataset()["train_records"]
+    dataset = current_dataset()
+    baseline = dataset["train_records"]
     if not baseline:
         raise HTTPException(409, "No baseline observations are available.")
     sample_indices = np.linspace(0, len(baseline) - 1, min(2000, len(baseline)), dtype=int)
     reference = np.asarray([[baseline[index][name] for name in SENSORS] for index in sample_indices], dtype=float)
-    engine = current_dataset()["engines"][0]
+    engine = dataset["engines"][0]
     current = np.asarray([[row[name] for row in engine["history"][-12:]] for name in SENSORS], dtype=float).T
     base_mean, base_std = reference.mean(axis=0), reference.std(axis=0)
     override = app.state.drift_override
@@ -731,7 +810,8 @@ def simulate_drift(request: DriftSimulationRequest):
 
 @app.get("/api/v1/explain/{engine_id}")
 def explain(engine_id: str):
-    engine, model = resolve_engine(engine_id), active_model()
+    dataset = current_dataset()
+    engine, model = resolve_engine(engine_id, dataset), active_model(dataset["id"])
     vector = np.asarray(feature_vector(engine["history"][-1], engine["history"][:-1]), dtype=np.float32)
     estimator = load_estimator(model)
     if model["algorithm"] == "LSTM":

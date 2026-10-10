@@ -149,11 +149,12 @@ def generate_demo_records(engine_count: int = 48, seed: int = 81) -> list[dict]:
 
 def make_dataset_engines(records: list[dict], rul_values: list[int] | None = None, *, demo: bool = False) -> list[dict]:
     grouped = group_engines(records)
+    rul_by_engine = dict(zip(grouped, rul_values or []))
     result = []
     for position, (engine_id, rows) in enumerate(sorted(grouped.items())):
         last_index = max(1, int(len(rows) * (0.56 + ((position * 17) % 29) / 100))) - 1 if demo else len(rows) - 1
         current = rows[: last_index + 1]
-        truth = (rows[-1]["cycle"] - current[-1]["cycle"]) if demo else (rul_values[position] if rul_values and position < len(rul_values) else None)
+        truth = (rows[-1]["cycle"] - current[-1]["cycle"]) if demo else rul_by_engine.get(engine_id)
         result.append({"id": f"ENG-{engine_id:03d}", "engine_id": engine_id, "subset": "FD001", "cycle": current[-1]["cycle"],
                        "total_cycles": rows[-1]["cycle"], "rul": truth, "health": "—", "history": current})
     return result

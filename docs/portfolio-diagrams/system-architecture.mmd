@@ -20,15 +20,15 @@ flowchart LR
   subgraph STATE["03 · LOCAL PERSISTENCE"]
     direction TB
     DB[("SQLite · WAL<br/>dataset + model registry · durable training_jobs<br/>predictions · alerts · audit · sessions · replay")]
-    RAW[("data/raw/&lt;version&gt;/<br/>byte-preserved imports<br/>per-file SHA-256")]
+    RAW[("data/raw/&lt;version&gt;/<br/>byte-preserved imports<br/>per-file SHA-256 verified on restore")]
   end
 
   subgraph WORK["04 · ASYNCHRONOUS TRAINING · SEPARATE COMPOSE SERVICE"]
     direction TB
     WORKER["One lock-protected worker<br/>SQLite polling · BEGIN IMMEDIATE claim"]
     FEATURES["Training-only labels + trailing features<br/>engine boundaries preserved"]
-    ESTIMATORS["MeanBaseline · RandomForest<br/>HistGradientBoosting<br/>optional PyTorch LSTM"]
-    VALIDATION["Seeded 80/20 split by engine ID<br/>candidate · metrics · experiment"]
+    ESTIMATORS["MeanBaseline · RandomForest<br/>HistGradientBoosting · condition-aware HGB<br/>optional PyTorch LSTM"]
+    VALIDATION["Seeded 80/20 engine-ID holdout<br/>80%-life censored endpoint validation<br/>refit final model on all training engines"]
     WORKER --> FEATURES --> ESTIMATORS --> VALIDATION
   end
 

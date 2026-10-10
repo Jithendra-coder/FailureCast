@@ -12,8 +12,8 @@ x-app: &app
     FAILURECAST_CRITICAL_CYCLES: ${FAILURECAST_CRITICAL_CYCLES:-15}
     FAILURECAST_WORKER_POLL_SECONDS: ${FAILURECAST_WORKER_POLL_SECONDS:-1}
   volumes:
-    - ./data:/app/data
-    - ./artifacts:/app/artifacts
+    - ${FAILURECAST_DATA_DIR:-./data}:/app/data
+    - ${FAILURECAST_ARTIFACT_DIR:-./artifacts}:/app/artifacts
   restart: unless-stopped
   read_only: true
   cap_drop: [ALL]
@@ -33,7 +33,7 @@ services:
       FAILURECAST_COOKIE_SECURE: ${FAILURECAST_COOKIE_SECURE:-false}
       FAILURECAST_ALLOWED_ORIGINS: ${FAILURECAST_ALLOWED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${FAILURECAST_PORT:-8000}:8000"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/ready', timeout=3)"]
       interval: 30s

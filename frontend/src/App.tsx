@@ -12,6 +12,7 @@ import {
 
 type Screen = 'overview' | 'dataset' | 'engine' | 'replay' | 'experiments' | 'explain' | 'monitoring' | 'registry'
 type ApiData = { [key: string]: any }
+type ApiError = Error & { status?: number }
 const screens: { id: Screen; label: string; icon: typeof Activity; section: string }[] = [
   { id: 'overview', label: 'Overview', icon: Gauge, section: 'WORKSPACE' },
   { id: 'engine', label: 'Engine health', icon: Activity, section: 'WORKSPACE' },
@@ -27,7 +28,7 @@ async function api(path: string, init?: RequestInit): Promise<any> {
   const response = await fetch(`/api/v1${path}`, { credentials: 'include', ...init })
   const payload = await response.json().catch(() => ({}))
   if (response.status === 401 && !path.startsWith('/auth/')) window.dispatchEvent(new Event('failurecast:unauthorized'))
-  if (!response.ok) throw new Error(payload.detail || `Request failed (${response.status})`)
+  if (!response.ok) throw Object.assign(new Error(payload.detail || `Request failed (${response.status})`), { status: response.status })
   return payload
 }
 
@@ -106,7 +107,7 @@ function App() {
   const [drift, setDrift] = useState<ApiData | null>(null)
   const [explanation, setExplanation] = useState<ApiData | null>(null)
   const [selectedEngine, setSelectedEngine] = useState('')
-  const [connection, setConnection] = useState<'loading' | 'online' | 'offline'>('loading')
+  const [connection, setConnection] = useState<'loading' | 'online' | 'offline' | 'model-required'>('loading')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [replay, setReplay] = useState<ApiData | null>(null)
@@ -123,12 +124,22 @@ function App() {
   const refresh = useCallback(async (showLoading = false) => {
     if (showLoading) setBusy(true)
     try {
-      const [o, e, d, m, j, a, r] = await Promise.all([
-        api('/overview'), api('/engines'), api('/datasets'), api('/models'), api('/training/jobs'), api('/alerts'), api('/replay/sessions'),
+      const [d, m, j, a, r] = await Promise.all([
+        api('/datasets'), api('/models'), api('/training/jobs'), api('/alerts'), api('/replay/sessions'),
       ])
-      setOverview(o); setEngines(e.items); setDatasets(d.items); setModels(m.items); setJobs(j.items); setAlerts(a.items)
+      setDatasets(d.items); setModels(m.items); setJobs(j.items); setAlerts(a.items)
+      let o: ApiData, e: ApiData
+      try {
+        [o, e] = await Promise.all([api('/overview'), api('/engines')])
+      } catch (error) {
+        if ((error as ApiError).status !== 409) throw error
+        setOverview(null); setEngines([]); setSelectedEngine(''); setReplay(null); setReplaySeries([])
+        setConnection('model-required')
+        return
+      }
+      setOverview(o); setEngines(e.items)
       const previousReplay = r.items.find((item: ApiData) => item.status === 'running' || item.status === 'paused')
-      setReplay((current) => current || previousReplay || null)
+      setReplay((current) => current?.dataset_id === o.dataset.id ? current : previousReplay || null)
       if (previousReplay?.latest) setReplaySeries((current) => current.length ? current : [previousReplay.latest])
       setSelectedEngine((current) => current || o.selected_engine || e.items[0]?.id || '')
       setConnection('online')
@@ -210,7 +221,6 @@ function App() {
     try {
       await perform(async () => {
         const job = await api('/training/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ algorithm }) })
-        setScreen('experiments')
         return job
       }, 'Training job queued. It will register as a candidate when validation completes.')
     } finally { setTraining(false) }
@@ -263,27 +273,46 @@ function App() {
 
   if (connection === 'offline') return <div className="offline"><div className="offline-card"><div className="brand-mark large"><Activity size={24} /></div><p className="eyebrow">FAILURECAST · LOCAL WORKSPACE</p><h1>The API service is unavailable.</h1><p>Check the service health, then retry to reconnect to your reliability workspace.</p><button className="primary-button" onClick={() => void refresh(true)}>Retry connection <ArrowRight size={16} /></button></div></div>
 
+  const selectedDataset = overview?.dataset || datasets.find((dataset: ApiData) => dataset.active)
+
   return <div className="app-shell">
     <aside className={`sidebar ${mobileNav ? 'mobile-open' : ''}`}>{nav}</aside>
     {mobileNav && <button className="scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}
     <main className="main-area">
-      <header className="topbar"><button className="mobile-menu icon-button" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={19} /></button><div className="breadcrumbs"><span>Workspace</span><b>/</b><strong>{screens.find((item) => item.id === screen)?.label}</strong></div><div className="topbar-actions"><span className="data-chip"><i />{overview?.dataset?.subset || 'FD001'} <span>·</span> {overview?.simulation_only ? 'SIMULATED' : 'DATASET'}</span><button className="icon-button" title="This is a research demonstration, not an operational maintenance system." onClick={() => setNotice('FailureCast estimates are research outputs, not guaranteed service life or maintenance instructions.')}><CircleHelp size={17} /></button><div className="top-divider" /><div className="connection"><i className="online-dot" /> API connected</div></div></header>
+      <header className="topbar"><button className="mobile-menu icon-button" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={19} /></button><div className="breadcrumbs"><span>Workspace</span><b>/</b><strong>{screens.find((item) => item.id === screen)?.label}</strong></div><div className="topbar-actions"><span className="data-chip"><i />{selectedDataset?.subset || 'FD001'} <span>·</span> {overview?.simulation_only ? 'SIMULATED' : 'DATASET'}</span><button className="icon-button" title="This is a research demonstration, not an operational maintenance system." onClick={() => setNotice('FailureCast estimates are research outputs, not guaranteed service life or maintenance instructions.')}><CircleHelp size={17} /></button><div className="top-divider" /><div className="connection"><i className="online-dot" /> {connection === 'model-required' ? 'Model required' : 'API connected'}</div></div></header>
       <div className="page-wrap">
         {connection === 'loading' && !overview ? <div className="loading"><div className="loader" /><span>Preparing reliability workspace…</span></div> : <>
-          {screen === 'overview' && overview && <Overview data={overview} engines={engines} alerts={alerts} setScreen={setScreen} selectEngine={setSelectedEngine} acknowledge={acknowledge} startReplay={startReplay} />}
-          {screen === 'engine' && <EngineScreen engine={selected} engines={engines} selectedId={selectedEngine} setSelected={setSelectedEngine} startReplay={startReplay} />}
-          {screen === 'replay' && <ReplayScreen engines={engines} selectedEngine={selectedEngine} setSelected={setSelectedEngine} replay={replay} series={replaySeries} speed={replaySpeed} setSpeed={setReplaySpeed} start={startReplay} action={replayAction} />}
-          {screen === 'dataset' && <DatasetScreen datasets={datasets} active={overview?.dataset} files={importFiles} setFiles={setImportFiles} filePickerKey={filePickerKey} subset={subset} setSubset={setSubset} upload={importDataset} uploading={uploading} />}
+          {connection === 'model-required' && (screen === 'dataset' || screen === 'registry' || screen === 'monitoring') && <div className="model-required-banner"><Cpu size={16} /><span>Forecasting is paused until a model trained for this dataset is approved.</span><button className="text-button" onClick={() => setScreen('experiments')}>Train a model <ArrowRight size={14} /></button></div>}
+          {connection === 'model-required' && (screen === 'overview' || screen === 'engine' || screen === 'replay' || screen === 'explain') && <ModelRequiredScreen dataset={selectedDataset} models={models} setScreen={setScreen} />}
+          {screen === 'overview' && connection === 'online' && overview && <Overview data={overview} engines={engines} alerts={alerts} setScreen={setScreen} selectEngine={setSelectedEngine} acknowledge={acknowledge} startReplay={startReplay} />}
+          {screen === 'engine' && connection === 'online' && <EngineScreen engine={selected} engines={engines} selectedId={selectedEngine} setSelected={setSelectedEngine} startReplay={startReplay} />}
+          {screen === 'replay' && connection === 'online' && <ReplayScreen engines={engines} selectedEngine={selectedEngine} setSelected={setSelectedEngine} replay={replay} series={replaySeries} speed={replaySpeed} setSpeed={setReplaySpeed} start={startReplay} action={replayAction} />}
+          {screen === 'dataset' && <DatasetScreen datasets={datasets} active={selectedDataset} files={importFiles} setFiles={setImportFiles} filePickerKey={filePickerKey} subset={subset} setSubset={setSubset} upload={importDataset} uploading={uploading} />}
           {screen === 'experiments' && <ExperimentsScreen models={models} jobs={jobs} algorithm={algorithm} setAlgorithm={setAlgorithm} train={train} busy={busy || training} />}
-          {screen === 'explain' && <ExplainScreen engine={selected} engines={engines} selectedId={selectedEngine} setSelected={setSelectedEngine} explanation={explanation} />}
-          {screen === 'monitoring' && <MonitoringScreen drift={drift} model={models.find((item) => item.status === 'active')?.id} setScreen={setScreen} announce={setNotice} refresh={() => api('/monitoring/drift').then(setDrift).catch((error) => setNotice(error.message))} />}
-          {screen === 'registry' && <RegistryScreen models={models} refresh={refresh} announce={setNotice} />}
+          {screen === 'explain' && connection === 'online' && <ExplainScreen engine={selected} engines={engines} selectedId={selectedEngine} setSelected={setSelectedEngine} explanation={explanation} />}
+          {screen === 'monitoring' && <MonitoringScreen drift={drift} model={models.find((item: ApiData) => item.status === 'active' && item.dataset_id === selectedDataset?.id)?.id} setScreen={setScreen} announce={setNotice} refresh={() => api('/monitoring/drift').then(setDrift).catch((error) => setNotice(error.message))} />}
+          {screen === 'registry' && <RegistryScreen models={models} currentDatasetId={selectedDataset?.id} simulationOnly={overview?.simulation_only} refresh={refresh} announce={setNotice} />}
           <footer className="page-footer"><span>FailureCast <b>·</b> Predictive maintenance research platform</span><span>Simulation only · No equipment control</span></footer>
         </>}
       </div>
     </main>
     {notice && <div className="toast" role="status"><span className="toast-mark"><Check size={14} /></span>{notice}<button onClick={() => setNotice('')} aria-label="Dismiss"><X size={15} /></button></div>}
   </div>
+}
+
+function ModelRequiredScreen({ dataset, models, setScreen }: { dataset?: ApiData; models: ApiData[]; setScreen: (screen: Screen) => void }) {
+  const datasetId = dataset?.id
+  const hasCandidate = models.some((model) => model.status === 'candidate' && model.dataset_id === datasetId)
+  const hasApproved = models.some((model) => model.status === 'approved' && model.dataset_id === datasetId)
+  return <>
+    <PageHeading eyebrow="MODEL DEVELOPMENT · DATASET BOUNDARY" title="Train for the selected data" detail="FailureCast paused forecasting because no approved model matches this exact dataset version." tag={<Badge tone="warning" dot>MODEL REQUIRED</Badge>} />
+    <section className="panel model-required-panel">
+      <div className="model-required-icon"><ShieldCheck size={20} /></div>
+      <div className="model-required-copy"><span className="section-kicker">ACTIVE DATASET</span><h2>{dataset?.name || 'Selected dataset'}</h2><p>{dataset?.id || 'Dataset version unavailable'}</p><span>Train a candidate on this version, review its held-out validation evidence, then explicitly approve it before estimates resume.</span></div>
+      <div className="model-required-actions"><button className="primary-button" onClick={() => setScreen(hasCandidate || hasApproved ? 'registry' : 'experiments')}><Cpu size={15} /> {hasCandidate ? 'Review candidate' : hasApproved ? 'Restore approved model' : 'Train a model'}</button><button className="secondary-button" onClick={() => setScreen('dataset')}><Database size={15} /> Review dataset</button></div>
+    </section>
+    <p className="model-required-foot">The demo model and models trained on other dataset versions are not used for these forecasts.</p>
+  </>
 }
 
 function PageHeading({ eyebrow, title, detail, action, tag }: { eyebrow: string; title: string; detail: string; action?: ReactNode; tag?: ReactNode }) {
@@ -453,7 +482,7 @@ function ReplayScreen({ engines, selectedEngine, setSelected, replay, series, sp
       {!replay ? <div className="replay-empty"><div className="replay-empty-icon"><Waves size={26} /></div><h3>Replay a simulated engine</h3><p>Each observation is sent through the active model. Predictions are stored with the model version and checked against configured alert thresholds.</p><div className="replay-controls"><div className="select-wrap"><Cpu size={15} /><select value={selectedEngine} onChange={(event) => setSelected(event.target.value)}>{engines.map((item: any) => <option key={item.id} value={item.id}>{item.id}</option>)}</select><ChevronDown size={15} /></div><button className="primary-button" onClick={() => start()}><Play size={15} fill="currentColor" /> Start replay</button></div></div> : <>
         <div className="replay-graph"><ResponsiveContainer width="100%" height="100%"><AreaChart data={series} margin={{ top: 10, right: 4, left: -20, bottom: 0 }}><defs><linearGradient id="telemetryFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#30b99b" stopOpacity={0.2} /><stop offset="100%" stopColor="#30b99b" stopOpacity={0} /></linearGradient></defs><CartesianGrid stroke="#edf0f3" vertical={false} /><XAxis dataKey="cycle" tickLine={false} axisLine={false} tick={{ fill: '#98a2b1', fontSize: 11 }} /><YAxis tickLine={false} axisLine={false} tick={{ fill: '#98a2b1', fontSize: 11 }} /><Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e8ecf0', fontSize: 12 }} /><Area type="monotone" dataKey="sensor_2" stroke="#30b99b" strokeWidth={2.2} fill="url(#telemetryFill)" dot={false} name="Sensor 2 · observed" /><Line type="monotone" dataKey="rul" stroke="#477de3" strokeWidth={2} dot={false} name="RUL estimate" /></AreaChart></ResponsiveContainer>{!series.length && <div className="chart-overlay"><span className="pulse-dot" /> Waiting for first observation</div>}</div>
         <div className="replay-progress"><div><span>SEQUENCE PROGRESS</span><b>{step} <small>/ {total} observations</small></b></div><div className="progress-track"><i style={{ width: `${Math.min(100, step / total * 100)}%` }} /></div><div className="last-observation"><i /> Cycle {latest?.cycle || '—'} <span>·</span> Sensor data received</div></div>
-        <div className="replay-toolbar"><div className="replay-buttons"><button className="round-icon" onClick={() => action('reset')} title="Reset replay"><RotateCcw size={15} /></button>{replay.status === 'running' ? <button className="secondary-button" onClick={() => action('pause')}><Pause size={15} /> Pause</button> : <button className="primary-button" onClick={() => action('resume')}><Play size={15} fill="currentColor" /> Resume</button>}<button className="secondary-button" onClick={() => action('step')} disabled={replay.status !== 'running'}>Step once <ArrowRight size={14} /></button></div><label className="speed-select">SPEED <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}><option value={0.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option></select></label></div>
+        <div className="replay-toolbar"><div className="replay-buttons"><button className="round-icon" onClick={() => action('reset')} title="Reset replay"><RotateCcw size={15} /></button>{replay.status === 'running' ? <button className="secondary-button" onClick={() => action('pause')}><Pause size={15} /> Pause</button> : <button className="primary-button" onClick={() => action(replay.status === 'completed' ? 'reset' : 'resume')}><Play size={15} fill="currentColor" /> {replay.status === 'completed' ? 'Restart replay' : 'Resume'}</button>}<button className="secondary-button" onClick={() => action('step')} disabled={replay.status !== 'running'}>Step once <ArrowRight size={14} /></button></div><label className="speed-select">SPEED <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}><option value={0.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option></select></label></div>
       </>}</section>
       <aside className="panel live-panel"><CardTitle title="Current replay estimate" detail="Updated with each simulated observation." /><div className={`live-value ${latest?.severity || 'neutral'}`}><b>{number(latest?.rul, 1)}</b><span>cycles</span></div><div className="live-status"><span>Maintenance status</span><Badge tone={latest?.severity || 'neutral'} dot>{severityLabel(latest?.severity)}</Badge></div><div className="live-divider" /><div className="telemetry-list"><div><span><i className="sensor-color green" />Sensor 2</span><b>{number(latest?.sensor_2, 4)}</b></div><div><span><i className="sensor-color blue" />Sensor 3</span><b>{number(latest?.sensor_3, 4)}</b></div><div><span><i className="sensor-color purple" />Sensor 7</span><b>{number(latest?.sensor_7, 4)}</b></div></div><div className="simulation-note"><AlertCircle size={15} /><span>Historical simulation. No live equipment connection or control.</span></div></aside>
     </div>
@@ -474,8 +503,8 @@ function DatasetScreen({ datasets, active, files, setFiles, filePickerKey, subse
 
 function ExperimentsScreen({ models, jobs, algorithm, setAlgorithm, train, busy }: any) {
   return <>
-    <PageHeading eyebrow="INTELLIGENCE · MODEL DEVELOPMENT" title="Experiments" detail="Train reproducible candidates, compare engine-held-out results and keep the active model in service." tag={<Badge tone="neutral">SEED 41 · FEATURE PIPELINE V1</Badge>} action={<button className="primary-button" onClick={train} disabled={busy}><Zap size={15} /> Start training</button>} />
-    <section className="panel train-panel"><div className="train-intro"><div className="train-icon"><Cpu size={19} /></div><div><b>Train a candidate model</b><span>Training runs asynchronously on the selected dataset and validates by engine ID.</span></div></div><div className="train-form"><label className="field-group"><span>ALGORITHM</span><div className="select-wrap"><select value={algorithm} onChange={(event) => setAlgorithm(event.target.value)}><option>MeanBaseline</option><option>HistGradientBoostingRegressor</option><option>RandomForestRegressor</option><option>LSTM</option></select><ChevronDown size={14} /></div></label><div className="train-facts"><span><ShieldCheck size={14} /> 80/20 engine-level holdout</span><span><Activity size={14} /> Capped RUL target: 125</span></div><button className="primary-button" onClick={train} disabled={busy}><Zap size={15} /> Queue training job</button></div><p className="train-note">The official test set is kept out of model selection. LSTM training requires the optional PyTorch dependency.</p></section>
+    <PageHeading eyebrow="INTELLIGENCE · MODEL DEVELOPMENT" title="Experiments" detail="Train reproducible candidates, compare engine-held-out results and keep the active model in service." tag={<Badge tone="neutral">SEED 41 · {algorithm === 'ConditionAwareHistGradientBoostingRegressor' ? 'CONDITION FEATURES' : 'FEATURE PIPELINE V1'}</Badge>} action={<button className="primary-button" onClick={train} disabled={busy}><Zap size={15} /> Start training</button>} />
+      <section className="panel train-panel"><div className="train-intro"><div className="train-icon"><Cpu size={19} /></div><div><b>Train a candidate model</b><span>Training runs asynchronously on the selected dataset and validates by engine ID.</span></div></div><div className="train-form"><label className="field-group"><span>ALGORITHM</span><div className="select-wrap"><select value={algorithm} onChange={(event) => setAlgorithm(event.target.value)}><option>MeanBaseline</option><option>HistGradientBoostingRegressor</option><option>ConditionAwareHistGradientBoostingRegressor</option><option>RandomForestRegressor</option><option>LSTM</option></select><ChevronDown size={14} /></div></label><div className="train-facts"><span><ShieldCheck size={14} /> 80/20 engine-level holdout</span><span><Activity size={14} /> Capped RUL target: 125</span></div><button className="primary-button" onClick={train} disabled={busy}><Zap size={15} /> Queue training job</button></div><p className="train-note">The official test set is kept out of model selection. LSTM training requires the optional PyTorch dependency.</p></section>
     <section className="panel table-panel"><CardTitle title="Model comparison" detail="Validation metrics are reported on held-out engines and stay linked to their dataset version." action={<span className="table-meta">{models.length} registered versions</span>} /><div className="table-scroll"><table><thead><tr><th>MODEL</th><th>ALGORITHM</th><th>VALIDATION MAE</th><th>RMSE</th><th>BIAS</th><th>ENGINES</th><th>STATUS</th></tr></thead><tbody>{models.map((model: any) => <tr key={model.id}><td><div className="model-name"><span className="model-mini"><Layers3 size={14} /></span><b>{model.id}</b></div></td><td>{model.algorithm}</td><td>{number(model.metrics?.mae, 2)} <small>cycles</small></td><td>{number(model.metrics?.rmse, 2)}</td><td>{number(model.metrics?.bias, 2)}</td><td>{number(model.metrics?.validation_engines)}</td><td><Badge tone={model.status === 'active' ? 'active' : model.status}>{model.status}</Badge></td></tr>)}</tbody></table></div></section>
     <section className="panel table-panel jobs-panel"><CardTitle title="Training jobs" detail="Recent local runs and candidate registration." /><div className="table-scroll"><table><thead><tr><th>JOB</th><th>ALGORITHM</th><th>CREATED</th><th>STATUS</th><th>RESULT</th></tr></thead><tbody>{jobs.length ? jobs.map((job: any) => <tr key={job.id}><td><code>{job.id}</code></td><td>{job.algorithm}</td><td>{new Date(job.created_at).toLocaleString()}</td><td><Badge tone={job.status === 'completed' ? 'normal' : job.status === 'failed' ? 'critical' : 'demo'} dot>{job.status}</Badge></td><td>{job.result?.model_id || job.error || '—'}</td></tr>) : <tr><td colSpan={5} className="empty-cell">No training jobs yet. Queue a run to register the first candidate.</td></tr>}</tbody></table></div></section>
   </>
@@ -511,7 +540,7 @@ function MonitoringScreen({ drift, model, refresh, setScreen, announce }: any) {
   </>
 }
 
-function RegistryScreen({ models, refresh, announce }: any) {
+function RegistryScreen({ models, currentDatasetId, simulationOnly, refresh, announce }: any) {
   const [busyId, setBusyId] = useState('')
   const [confirmModel, setConfirmModel] = useState<ApiData | null>(null)
   const [audit, setAudit] = useState<ApiData[]>([])
@@ -520,33 +549,33 @@ function RegistryScreen({ models, refresh, announce }: any) {
     if (!confirmModel) return
     setBusyId(confirmModel.id)
     try {
-      await api(`/models/${confirmModel.id}/promote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ approved: true }) })
-      announce(`Model ${confirmModel.id} is active.`); setConfirmModel(null); await refresh(); setAudit((await api('/audit')).items)
+      const result = await api(`/models/${confirmModel.id}/promote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ approved: true }) })
+      setConfirmModel(null); await refresh(); setAudit((await api('/audit')).items); announce(`Model ${result.id} is active.`)
     } catch (error) { announce((error as Error).message) }
     finally { setBusyId('') }
   }
   const rollback = async () => {
     setBusyId('rollback')
-    try { const result = await api('/models/rollback', { method: 'POST' }); announce(`Restored ${result.id} as the active model.`); await refresh(); setAudit((await api('/audit')).items) }
+    try { const result = await api('/models/rollback', { method: 'POST' }); await refresh(); setAudit((await api('/audit')).items); announce(`Restored ${result.id} as the active model.`) }
     catch (error) { announce((error as Error).message) }
     finally { setBusyId('') }
   }
-  const rollbackAvailable = models.some((model: any) => model.status === 'approved')
+  const rollbackAvailable = models.some((model: any) => model.status === 'approved' && model.dataset_id === currentDatasetId)
   const evaluate = async (model: any) => {
     setBusyId(model.id)
     try {
       const report = await api(`/models/${model.id}/evaluate`, { method: 'POST' })
       const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `failurecast-evaluation-${model.id}.json`; link.click(); URL.revokeObjectURL(url)
-      announce(`Final-cycle evaluation: MAE ${number(report.mae, 2)}, RMSE ${number(report.rmse, 2)} cycles across ${report.test_engines} engines.`)
+      announce(`${report.simulation_only ? 'Simulated evaluation' : 'Final-cycle evaluation'}: MAE ${number(report.mae, 2)}, RMSE ${number(report.rmse, 2)} cycles across ${report.test_engines} engines.`)
       setAudit((await api('/audit')).items)
     } catch (error) { announce((error as Error).message) }
     finally { setBusyId('') }
   }
   return <>
     <PageHeading eyebrow="CONTROL ROOM · MODEL LIFECYCLE" title="Model registry" detail="Review validation evidence, explicitly promote a candidate and restore a previous approved version." tag={<Badge tone="active" dot>CONTROLLED DEPLOYMENT</Badge>} action={<button className="secondary-button" disabled={!rollbackAvailable || busyId === 'rollback'} onClick={rollback}><RotateCcw size={15} /> {busyId === 'rollback' ? 'Restoring…' : 'Roll back'}</button>} />
-    <section className="panel registry-panel"><CardTitle title="Registered versions" detail="Only locally created, validated artifacts are loaded by the inference service." action={<span className="table-meta">{models.length} versions</span>} /><div className="table-scroll"><table><thead><tr><th>VERSION</th><th>MODEL</th><th>DATASET</th><th>VALIDATION MAE</th><th>CREATED</th><th>STATE</th><th>ACTION</th></tr></thead><tbody>{models.map((model: any) => <tr key={model.id}><td><div className="model-name"><span className="model-mini"><Layers3 size={14} /></span><b>{model.id}</b></div></td><td>{model.algorithm}</td><td>{model.dataset_id || 'Demo · FD001'}</td><td>{number(model.metrics?.mae, 2)} <small>cycles</small></td><td>{new Date(model.created_at).toLocaleDateString()}</td><td><Badge tone={model.status === 'active' ? 'active' : model.status}>{model.status}</Badge></td><td>{model.status === 'candidate' ? <button className="table-action" onClick={() => setConfirmModel(model)}>Review & promote <ArrowRight size={13} /></button> : model.status === 'active' ? <button className="table-action" onClick={() => evaluate(model)} disabled={busyId === model.id}>{busyId === model.id ? 'Evaluating…' : 'Evaluate test set'} <ArrowRight size={13} /></button> : <span className="muted-action">Rollback ready</span>}</td></tr>)}</tbody></table></div></section>
-    <section className="panel audit-panel"><CardTitle title="Deployment history" detail="Model lifecycle actions recorded locally." /><div className="audit-list">{audit.length ? audit.map((event: any) => <div className="audit-row" key={event.id}><span className="audit-icon"><GitBranch size={15} /></span><div><b>{event.action === 'promote' ? 'Model promoted' : event.action === 'rollback' ? 'Model rollback' : event.action === 'official_test_evaluation' ? 'Final test evaluation' : 'Alert acknowledged'}</b><span>{event.model_id || JSON.parse(event.details).alert_id} · {new Date(event.created_at).toLocaleString()}</span></div><Badge tone="normal">RECORDED</Badge></div>) : <div className="empty-cell">No deployment events recorded yet.</div>}</div></section>
+    <section className="panel registry-panel"><CardTitle title="Registered versions" detail="Only models trained on the selected dataset version can be activated or evaluated." action={<span className="table-meta">{models.length} versions</span>} /><div className="table-scroll"><table><thead><tr><th>VERSION</th><th>MODEL</th><th>DATASET</th><th>VALIDATION MAE</th><th>CREATED</th><th>STATE</th><th>ACTION</th></tr></thead><tbody>{models.map((model: any) => <tr key={model.id}><td><div className="model-name"><span className="model-mini"><Layers3 size={14} /></span><b>{model.id}</b></div></td><td>{model.algorithm}</td><td>{model.dataset_id || 'Unassigned'}</td><td>{number(model.metrics?.mae, 2)} <small>cycles</small></td><td>{new Date(model.created_at).toLocaleDateString()}</td><td><Badge tone={model.status === 'active' ? 'active' : model.status}>{model.status}</Badge></td><td>{model.status === 'candidate' && model.dataset_id === currentDatasetId ? <button className="table-action" onClick={() => setConfirmModel(model)} disabled={!!busyId}>Review & promote <ArrowRight size={13} /></button> : model.status === 'active' && model.dataset_id === currentDatasetId ? <button className="table-action" onClick={() => evaluate(model)} disabled={!!busyId}>{busyId === model.id ? 'Evaluating…' : simulationOnly ? 'Evaluate simulated demo' : 'Evaluate test set'} <ArrowRight size={13} /></button> : model.status === 'approved' && model.dataset_id === currentDatasetId ? <span className="muted-action">Rollback ready</span> : <span className="muted-action">Different dataset</span>}</td></tr>)}</tbody></table></div></section>
+    <section className="panel audit-panel"><CardTitle title="Deployment history" detail="Model lifecycle actions recorded locally." /><div className="audit-list">{audit.length ? audit.map((event: any) => { const details = JSON.parse(event.details); return <div className="audit-row" key={event.id}><span className="audit-icon"><GitBranch size={15} /></span><div><b>{event.action === 'promote' ? 'Model promoted' : event.action === 'rollback' ? 'Model rollback' : event.action === 'official_test_evaluation' ? details.simulation_only ? 'Simulated evaluation' : 'Final test evaluation' : 'Alert acknowledged'}</b><span>{event.model_id || details.alert_id} · {new Date(event.created_at).toLocaleString()}</span></div><Badge tone="normal">RECORDED</Badge></div>}) : <div className="empty-cell">No deployment events recorded yet.</div>}</div></section>
     {confirmModel && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setConfirmModel(null) }}><section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="promote-title"><button className="modal-close" onClick={() => setConfirmModel(null)} aria-label="Close"><X size={17} /></button><div className="modal-symbol"><ShieldCheck size={20} /></div><span className="eyebrow">CANDIDATE APPROVAL</span><h2 id="promote-title">Activate this model version?</h2><p><b>{confirmModel.id}</b> · {confirmModel.algorithm}. This will switch new predictions to the candidate and preserve the current version for rollback.</p><div className="modal-metrics"><div><span>Validation MAE</span><b>{number(confirmModel.metrics?.mae, 2)} cycles</b></div><div><span>Holdout engines</span><b>{number(confirmModel.metrics?.validation_engines)}</b></div></div><div className="modal-actions"><button className="secondary-button" onClick={() => setConfirmModel(null)}>Cancel</button><button className="primary-button" onClick={promote} disabled={!!busyId}>{busyId ? 'Activating…' : <><Check size={15} /> Approve & activate</>}</button></div></section></div>}
   </>
 }

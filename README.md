@@ -40,7 +40,7 @@ The self-hosted Compose deployment enables password authentication, serves the U
 3. For a reverse-proxy hostname, add its exact origin to `FAILURECAST_ALLOWED_ORIGINS`, such as `https://failurecast.example.com`.
 4. Run `docker compose up --build -d`, then open `http://127.0.0.1:8000` and sign in with the configured administrator passphrase.
 
-`GET /api/v1/health` is a liveness check and `/api/v1/ready` checks the database, active model, and restored dataset. Production disables Swagger and OpenAPI routes. Compose runs one API process and one training worker over local SQLite and shared local files. Keep one worker; multiple API replicas, network filesystems, and concurrent cross-host writes are not supported. Back up `artifacts/` and `data/` together while the services are stopped so the registry, model files, experiment tracking, and imported source data stay consistent. Keep `.env` out of source control and store production secrets in the deployment platform's secret manager.
+`GET /api/v1/health` is a liveness check. `/api/v1/ready` checks the database and restored dataset, and reports `model_status` separately as `ready`, `training_required`, or `unavailable`; the API and worker remain ready to train when the selected data version has no usable model. Production disables Swagger and OpenAPI routes. Compose runs one API process and one training worker over local SQLite and shared local files. Keep one worker; multiple API replicas, network filesystems, and concurrent cross-host writes are not supported. Back up `artifacts/` and `data/` together while the services are stopped so the registry, model files, experiment tracking, and imported source data stay consistent. Keep `.env` out of source control and store production secrets in the deployment platform's secret manager.
 
 The MLflow tracking UI is not started by default. To run it locally when needed, use `docker compose --profile tracking up -d mlflow`; it is available on `http://127.0.0.1:5000`.
 
@@ -48,18 +48,19 @@ The MLflow tracking UI is not started by default. To run it locally when needed,
 
 Download a subset from the NASA Prognostics Center of Excellence repository and keep the original files unchanged. Import the matching `train_FD00x.txt`, `test_FD00x.txt`, and `RUL_FD00x.txt` files together from **Dataset explorer**. Imports are restricted to FD001–FD004 and validate numeric schema, engine/cycle integrity, duplicates, ordering, finite values, and the final-cycle RUL label count. Raw files are stored under `data/raw/<version>/`, with per-file SHA-256 checksums; they are ignored by Git.
 
-The CLI applies the same file checks and can train a registered candidate:
+The CLI applies the same file checks and can train a candidate associated with the same content-derived dataset version used by the UI importer:
 
 ```powershell
 python -m backend.app.cli validate --subset FD001 --train .\train_FD001.txt --test .\test_FD001.txt --rul .\RUL_FD001.txt
-python -m backend.app.cli train --subset FD001 --train .\train_FD001.txt --test .\test_FD001.txt --rul .\RUL_FD001.txt --algorithm HistGradientBoostingRegressor
+python -m backend.app.cli train --subset FD001 --train .\train_FD001.txt --test .\test_FD001.txt --rul .\RUL_FD001.txt --algorithm ConditionAwareHistGradientBoostingRegressor
+python -m backend.app.cli benchmark --subset FD001 --train .\train_FD001.txt --test .\test_FD001.txt --rul .\RUL_FD001.txt
 ```
 
-Training constructs capped RUL labels (cap 125) from run-to-failure **training trajectories**. Features use current and trailing sensor readings only. Validation engines are held out before feature/model fitting; official test labels are not used in candidate training or validation. After explicitly selecting and activating a version, run its official final-cycle test protocol from the model registry. No score should be described as a model improvement unless compared on the same held-out protocol and data version.
+Training constructs capped RUL labels (cap 125) from run-to-failure **training trajectories**. A seeded 80/20 engine-ID split evaluates one censored observation at 80% of each held-out training trajectory; the final artifact is then refit on all official training engines. `ConditionAwareHistGradientBoostingRegressor` is an optional comparison: its operating-setting clusters and sensor normalization are fit on training rows only, and raw features remain available to the estimator. The read-only `benchmark` compares a mean baseline, default HistGradientBoosting, condition-aware HistGradientBoosting, and Random Forest on five predeclared train-only engine splits (seeds 41–45), then reports official test labels once at final observed cycles. It writes no registry or MLflow records. See the [reproducible NASA benchmark](docs/evaluation/nasa-cmapss-benchmark-2026-10.md) for results and limitations. No score should be described as a model improvement unless compared on the same held-out protocol and data version.
 
 ## Deep learning and experiment tracking
 
-The default environment trains a mean baseline, HistGradientBoosting, or Random Forest candidates on CPU and records run configuration, metrics, and model metadata in `artifacts/experiments/`. A separate worker claims each durable SQLite job; worker restarts re-queue an interrupted run. MLflow stores run metadata in the local SQLite database `artifacts/mlflow.db` and artifacts under `artifacts/mlartifacts/` by default. Set `MLFLOW_TRACKING_URI` to select another MLflow store. Inspect local runs from the repository root with `mlflow ui --backend-store-uri sqlite:///artifacts/mlflow.db --host 127.0.0.1 --port 5000`, or start the optional Compose UI with the `tracking` profile. The built-in demonstration model is trained from generated trajectories and must not be reported as NASA evaluation.
+The default environment trains a mean baseline, HistGradientBoosting, condition-aware HistGradientBoosting, or Random Forest candidates on CPU and records run configuration, metrics, and model metadata in `artifacts/experiments/`. A separate worker claims each durable SQLite job; worker restarts re-queue an interrupted run. MLflow stores run metadata in the local SQLite database `artifacts/mlflow.db` and artifacts under `artifacts/mlartifacts/` by default. Set `MLFLOW_TRACKING_URI` to select another MLflow store. Inspect local runs from the repository root with `mlflow ui --backend-store-uri sqlite:///artifacts/mlflow.db --host 127.0.0.1 --port 5000`, or start the optional Compose UI with the `tracking` profile. The built-in demonstration model is trained from generated trajectories and must not be reported as NASA evaluation.
 
 PyTorch is optional because its CPU wheel is substantially larger. Install it to enable the fixed-window LSTM option:
 
@@ -74,7 +75,7 @@ LSTM training is CPU-compatible, fixed-seed, held out by engine, and early-stopp
 1. Import and inspect a dataset version.
 2. Train a baseline or LSTM candidate; poll the job under Experiments.
 3. Review validation MAE, RMSE, bias, NASA score, split, and validation-engine count.
-4. Explicitly approve a candidate in Model registry.
+4. Explicitly approve a candidate in Model registry. Models can only be activated for the exact dataset version used for training; changing datasets pauses forecasts until a compatible version is activated.
 5. Evaluate the active version on final observed test cycles and the supplied RUL labels.
 6. Replay an engine trajectory to store cycle-ordered predictions and create threshold alerts.
 7. Acknowledge alerts, inspect local sensor sensitivity and distribution shift, and roll back to an approved version when needed.
@@ -91,6 +92,8 @@ All routes are under `/api/v1`. OpenAPI is available only in development at `/ap
 
 The prediction endpoint rejects malformed feature sets, non-finite values, non-increasing cycles, and sequences longer than 120 rows. Request bodies are bounded even when sent without a content-length header; dataset uploads are bounded to 20 MB per file and 40 MB total. Model loading accepts only artifacts inside the application-managed model directory. Production uses one administrator account with an expiring, signed, HttpOnly session cookie, login throttling, same-site cookies, and origin checks on state-changing requests. There are no user roles or external identity provider integrations.
 
+Models are bound to the exact content-derived dataset version used for training. If a different version is selected, prediction, engine, replay, and test-evaluation requests cannot use the old model; the workspace keeps dataset and experiment management available and guides the reviewer to train, approve, or restore a compatible version. Alerts and replay sessions are scoped to their source dataset; each replay also retains the model version used for its predictions.
+
 ## Local persistence and reproducibility
 
 - SQLite registry, alerts, predictions, training jobs, and audit events: `artifacts/failurecast.sqlite3`.
@@ -98,10 +101,39 @@ The prediction endpoint rejects malformed feature sets, non-finite values, non-i
 - Model artifacts and experiment metadata: `artifacts/models/`, `artifacts/experiments/`.
 - MLflow run metadata and artifacts: `artifacts/mlflow.db`, `artifacts/mlartifacts/`.
 - Immutable imported source files and checksums: `data/raw/`.
-- Feature version: `raw-plus-trailing-5-v1`; random seed: `41`.
+- Feature version: `raw-plus-trailing-5-v1` (or `raw-plus-trailing-5+condition-clusters-v1`); candidate seed: `41`; repeated benchmark seeds: `41`–`45`.
 - Generated datasets, model artifacts, databases, and secrets are excluded from Git.
 
-See [architecture](docs/architecture.md), [data governance](docs/data-governance.md), and the [model card](docs/model-card.md).
+## Backup and restore
+
+Stop the API and worker before creating a recovery point so the SQLite registry, model files, experiment records, and imported source files describe one consistent application state. The backup command snapshots SQLite databases with SQLite's online backup API, writes a SHA-256 manifest, and refuses to overwrite an existing archive. It includes only `data/` and `artifacts/`; it never includes `.env` credentials.
+
+```powershell
+python -m backend.app.backup create --source . --output D:\FailureCastBackups\failurecast-2026-10-10.tar.gz
+python -m backend.app.backup verify --archive D:\FailureCastBackups\failurecast-2026-10-10.tar.gz
+python -m backend.app.backup restore --archive D:\FailureCastBackups\failurecast-2026-10-10.tar.gz --destination D:\FailureCastRestore
+```
+
+Restore requires a path that does not already exist. The command verifies every path and checksum, checks restored SQLite integrity, and then atomically publishes the restored directory. To start a restored copy, point `FAILURECAST_DATA_DIR` and `FAILURECAST_ARTIFACT_DIR` at its `data` and `artifacts` subdirectories, set ownership for the configured container UID/GID, and use a separately configured `.env` with new credentials. Keep encrypted copies and credentials in an access-controlled backup location.
+
+## Browser acceptance tests
+
+The Playwright suite covers the welcome-to-workspace path, engine inspection, historical replay, model training, explicit approval, simulated test-set evaluation, and rollback. It expects a running, isolated Docker Compose instance and never seeds or clears a user's workspace. The CI workflow creates its own credentials and storage directories before starting the test deployment.
+
+```powershell
+Set-Location frontend
+npm ci
+npx playwright install chromium
+$env:FAILURECAST_E2E_URL = "http://127.0.0.1:8000"
+$env:FAILURECAST_E2E_PASSWORD = "<the test deployment administrator password>"
+npm run test:e2e
+```
+
+For a local run, first start Compose with separate `FAILURECAST_DATA_DIR`, `FAILURECAST_ARTIFACT_DIR`, and `FAILURECAST_PORT` values so browser actions cannot affect a working workspace. CI checks Python dependencies with `pip-audit -r requirements.txt --strict` and all frontend dependencies with `npm audit --audit-level=moderate`.
+
+With the same isolated workspace and credentials loaded into the environment, run `npm run demo:record` from `frontend` to create the captioned 1080p silent recording at `docs/demo-video/failurecast-demo.webm`. The recording queues training and changes model lifecycle state, so never target a user's workspace. The accompanying [demo narration script](docs/demo-video-script.md) is optional voiceover copy.
+
+See the [captioned demo video](docs/demo-video/failurecast-demo.webm), [engineering readiness report](docs/readiness-report.md), [reproducible NASA benchmark](docs/evaluation/nasa-cmapss-benchmark-2026-10.md), [architecture](docs/architecture.md), [data governance](docs/data-governance.md), and the [model card](docs/model-card.md).
 
 ## Checks
 
@@ -110,5 +142,6 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 Set-Location frontend
 npm ci
+npm audit --audit-level=moderate
 npm run build
 ```

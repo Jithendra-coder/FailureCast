@@ -1,0 +1,2589 @@
+{
+  "protocol": "fixed MeanBaseline, HistGradientBoosting, train-fitted operating-condition-aware HistGradientBoosting and RandomForest comparison; five predeclared train-only engine holdouts (seeds 41-45); final models fit using all official training engines; official supplied RUL labels are used only for final-cycle reporting after model choices are fixed",
+  "subsets": [
+    {
+      "subset": "FD001",
+      "train": {
+        "file": "train_FD001.txt",
+        "rows": 20631,
+        "engines": 100,
+        "cycle_min": 1,
+        "cycle_max": 362,
+        "missing_values": 0,
+        "duplicate_engine_cycles": 0,
+        "ordered_cycles": true,
+        "sensors": 21
+      },
+      "test": {
+        "file": "test_FD001.txt",
+        "rows": 13096,
+        "engines": 100,
+        "cycle_min": 1,
+        "cycle_max": 303,
+        "missing_values": 0,
+        "duplicate_engine_cycles": 0,
+        "ordered_cycles": true,
+        "sensors": 21
+      },
+      "rul_labels": 100,
+      "sha256": {
+        "train": "963b5e22825b34d8b21c69e1aeb4af3e647050eb672ee8834ba4b5d91d2de0f8",
+        "test": "3cda7109ce17bafb5443f2ac926cfcf88154b941b8c4cf95eb55d1ddd6f52851",
+        "rul": "a19c8ec94931949d0485bdc35118206e9c81c4547b422efb9cf86f4ceddbceca"
+      },
+      "benchmark": {
+        "dataset_id": "ds-fd001-520e9af00c",
+        "protocol": "fixed MeanBaseline, HistGradientBoosting, train-fitted operating-condition-aware HistGradientBoosting and RandomForest comparison; five predeclared train-only engine holdouts (seeds 41-45); final models fit using all official training engines; official supplied RUL labels are used only for final-cycle reporting after model choices are fixed",
+        "models": [
+          {
+            "algorithm": "MeanBaseline",
+            "validation": {
+              "mae": 46.678,
+              "rmse": 47.498,
+              "bias": 46.678,
+              "nasa_score": 2843.96,
+              "mae_by_rul_range": {
+                "0_30": 59.078,
+                "30_60": 47.245,
+                "60_plus": 24.078
+              },
+              "samples": 20,
+              "validation_engines": 20,
+              "training_engines": 80,
+              "validation_seed": 41,
+              "validation_samples": 20,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 1.38
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 46.678,
+                  "rmse": 47.498,
+                  "bias": 46.678,
+                  "nasa_score": 2843.96,
+                  "mae_by_rul_range": {
+                    "0_30": 59.078,
+                    "30_60": 47.245,
+                    "60_plus": 24.078
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 41,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 1.38
+                },
+                {
+                  "mae": 43.349,
+                  "rmse": 44.346,
+                  "bias": 43.349,
+                  "nasa_score": 2153.14,
+                  "mae_by_rul_range": {
+                    "0_30": 58.449,
+                    "30_60": 43.893,
+                    "60_plus": 18.449
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 42,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 46.257,
+                  "rmse": 46.672,
+                  "bias": 46.257,
+                  "nasa_score": 2416.93,
+                  "mae_by_rul_range": {
+                    "30_60": 46.257
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 43,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 46.487,
+                  "rmse": 47.17,
+                  "bias": 46.487,
+                  "nasa_score": 2683.37,
+                  "mae_by_rul_range": {
+                    "0_30": 59.037,
+                    "30_60": 45.826
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 44,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 39.334,
+                  "rmse": 40.761,
+                  "bias": 39.334,
+                  "nasa_score": 1518.01,
+                  "mae_by_rul_range": {
+                    "30_60": 41.962,
+                    "60_plus": 15.684
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 45,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 44.421,
+                  "stddev": 2.82
+                },
+                "rmse": {
+                  "mean": 45.289,
+                  "stddev": 2.519
+                },
+                "bias": {
+                  "mean": 44.421,
+                  "stddev": 2.82
+                },
+                "nasa_score": {
+                  "mean": 2323.082,
+                  "stddev": 466.251
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 35.9,
+              "rmse": 43.067,
+              "bias": 11.309,
+              "nasa_score": 33629.23,
+              "mae_by_rul_range": {
+                "0_30": 69.109,
+                "30_60": 37.115,
+                "60_plus": 22.011
+              },
+              "samples": 100,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "HistGradientBoostingRegressor",
+            "validation": {
+              "mae": 17.175,
+              "rmse": 25.223,
+              "bias": 9.507,
+              "nasa_score": 1738.48,
+              "mae_by_rul_range": {
+                "0_30": 13.03,
+                "30_60": 17.756,
+                "60_plus": 10.864
+              },
+              "samples": 20,
+              "validation_engines": 20,
+              "training_engines": 80,
+              "validation_seed": 41,
+              "validation_samples": 20,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 4.15
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 17.175,
+                  "rmse": 25.223,
+                  "bias": 9.507,
+                  "nasa_score": 1738.48,
+                  "mae_by_rul_range": {
+                    "0_30": 13.03,
+                    "30_60": 17.756,
+                    "60_plus": 10.864
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 41,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 4.15
+                },
+                {
+                  "mae": 19.233,
+                  "rmse": 22.39,
+                  "bias": 9.755,
+                  "nasa_score": 239.34,
+                  "mae_by_rul_range": {
+                    "0_30": 26.641,
+                    "30_60": 18.558,
+                    "60_plus": 23.987
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 42,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 16.224,
+                  "rmse": 22.008,
+                  "bias": 10.984,
+                  "nasa_score": 369.03,
+                  "mae_by_rul_range": {
+                    "30_60": 16.224
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 43,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 14.493,
+                  "rmse": 21.942,
+                  "bias": 12.861,
+                  "nasa_score": 527.66,
+                  "mae_by_rul_range": {
+                    "0_30": 22.87,
+                    "30_60": 14.053
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 44,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 17.863,
+                  "rmse": 24.741,
+                  "bias": 4.105,
+                  "nasa_score": 772.61,
+                  "mae_by_rul_range": {
+                    "30_60": 18.274,
+                    "60_plus": 14.157
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 45,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 16.998,
+                  "stddev": 1.591
+                },
+                "rmse": {
+                  "mean": 23.261,
+                  "stddev": 1.422
+                },
+                "bias": {
+                  "mean": 9.442,
+                  "stddev": 2.921
+                },
+                "nasa_score": {
+                  "mean": 729.424,
+                  "stddev": 534.946
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 14.181,
+              "rmse": 19.4,
+              "bias": -1.025,
+              "nasa_score": 693.64,
+              "mae_by_rul_range": {
+                "0_30": 8.252,
+                "30_60": 8.967,
+                "60_plus": 17.807
+              },
+              "samples": 100,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "ConditionAwareHistGradientBoostingRegressor",
+            "validation": {
+              "mae": 16.2,
+              "rmse": 24.185,
+              "bias": 8.914,
+              "nasa_score": 1354.48,
+              "mae_by_rul_range": {
+                "0_30": 12.366,
+                "30_60": 17.009,
+                "60_plus": 5.466
+              },
+              "samples": 20,
+              "validation_engines": 20,
+              "training_engines": 80,
+              "validation_seed": 41,
+              "validation_samples": 20,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 6.94
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 16.2,
+                  "rmse": 24.185,
+                  "bias": 8.914,
+                  "nasa_score": 1354.48,
+                  "mae_by_rul_range": {
+                    "0_30": 12.366,
+                    "30_60": 17.009,
+                    "60_plus": 5.466
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 41,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 6.94
+                },
+                {
+                  "mae": 18.918,
+                  "rmse": 22.614,
+                  "bias": 10.174,
+                  "nasa_score": 271.62,
+                  "mae_by_rul_range": {
+                    "0_30": 27.938,
+                    "30_60": 18.223,
+                    "60_plus": 22.413
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 42,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 17.146,
+                  "rmse": 23.083,
+                  "bias": 12.444,
+                  "nasa_score": 437.49,
+                  "mae_by_rul_range": {
+                    "30_60": 17.146
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 43,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 13.368,
+                  "rmse": 19.738,
+                  "bias": 11.924,
+                  "nasa_score": 261.82,
+                  "mae_by_rul_range": {
+                    "0_30": 22.709,
+                    "30_60": 12.876
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 44,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 16.991,
+                  "rmse": 23.418,
+                  "bias": 4.097,
+                  "nasa_score": 576.18,
+                  "mae_by_rul_range": {
+                    "30_60": 17.16,
+                    "60_plus": 15.469
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 45,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 16.525,
+                  "stddev": 1.811
+                },
+                "rmse": {
+                  "mean": 22.608,
+                  "stddev": 1.524
+                },
+                "bias": {
+                  "mean": 9.511,
+                  "stddev": 2.984
+                },
+                "nasa_score": {
+                  "mean": 580.318,
+                  "stddev": 404.099
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 14.327,
+              "rmse": 19.513,
+              "bias": -1.212,
+              "nasa_score": 694.61,
+              "mae_by_rul_range": {
+                "0_30": 8.221,
+                "30_60": 9.041,
+                "60_plus": 18.042
+              },
+              "samples": 100,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "RandomForestRegressor",
+            "validation": {
+              "mae": 15.183,
+              "rmse": 23.533,
+              "bias": 9.865,
+              "nasa_score": 1214.12,
+              "mae_by_rul_range": {
+                "0_30": 23.52,
+                "30_60": 15.433,
+                "60_plus": 2.342
+              },
+              "samples": 20,
+              "validation_engines": 20,
+              "training_engines": 80,
+              "validation_seed": 41,
+              "validation_samples": 20,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 43.18
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 15.183,
+                  "rmse": 23.533,
+                  "bias": 9.865,
+                  "nasa_score": 1214.12,
+                  "mae_by_rul_range": {
+                    "0_30": 23.52,
+                    "30_60": 15.433,
+                    "60_plus": 2.342
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 41,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 43.18
+                },
+                {
+                  "mae": 20.206,
+                  "rmse": 23.652,
+                  "bias": 10.989,
+                  "nasa_score": 295.59,
+                  "mae_by_rul_range": {
+                    "0_30": 33.742,
+                    "30_60": 19.24,
+                    "60_plus": 24.073
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 42,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 16.707,
+                  "rmse": 22.625,
+                  "bias": 12.484,
+                  "nasa_score": 364.7,
+                  "mae_by_rul_range": {
+                    "30_60": 16.707
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 43,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 14.0,
+                  "rmse": 19.275,
+                  "bias": 10.505,
+                  "nasa_score": 187.0,
+                  "mae_by_rul_range": {
+                    "0_30": 29.135,
+                    "30_60": 13.203
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 44,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 15.599,
+                  "rmse": 21.97,
+                  "bias": 3.253,
+                  "nasa_score": 739.96,
+                  "mae_by_rul_range": {
+                    "30_60": 15.766,
+                    "60_plus": 14.104
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 45,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 16.339,
+                  "stddev": 2.119
+                },
+                "rmse": {
+                  "mean": 22.211,
+                  "stddev": 1.592
+                },
+                "bias": {
+                  "mean": 9.419,
+                  "stddev": 3.202
+                },
+                "nasa_score": {
+                  "mean": 560.274,
+                  "stddev": 376.149
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 14.391,
+              "rmse": 19.369,
+              "bias": -1.101,
+              "nasa_score": 675.9,
+              "mae_by_rul_range": {
+                "0_30": 8.594,
+                "30_60": 8.036,
+                "60_plus": 18.226
+              },
+              "samples": 100,
+              "validation_engines": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "subset": "FD002",
+      "train": {
+        "file": "train_FD002.txt",
+        "rows": 53759,
+        "engines": 260,
+        "cycle_min": 1,
+        "cycle_max": 378,
+        "missing_values": 0,
+        "duplicate_engine_cycles": 0,
+        "ordered_cycles": true,
+        "sensors": 21
+      },
+      "test": {
+        "file": "test_FD002.txt",
+        "rows": 33991,
+        "engines": 259,
+        "cycle_min": 1,
+        "cycle_max": 367,
+        "missing_values": 0,
+        "duplicate_engine_cycles": 0,
+        "ordered_cycles": true,
+        "sensors": 21
+      },
+      "rul_labels": 259,
+      "sha256": {
+        "train": "dac6c4dbc4e7c1bdeb5747da3d313d05c395bb99801b44a002b26a2ba13d788f",
+        "test": "de7b5bf7e998a985c378488480528b7c02cff1406a46740def362dda8d9b4e02",
+        "rul": "c851dd96a6ea6998d3c4a8f834d3c8013aa90e93a6ed950dc826ad0655b2906b"
+      },
+      "benchmark": {
+        "dataset_id": "ds-fd002-1adec02737",
+        "protocol": "fixed MeanBaseline, HistGradientBoosting, train-fitted operating-condition-aware HistGradientBoosting and RandomForest comparison; five predeclared train-only engine holdouts (seeds 41-45); final models fit using all official training engines; official supplied RUL labels are used only for final-cycle reporting after model choices are fixed",
+        "models": [
+          {
+            "algorithm": "MeanBaseline",
+            "validation": {
+              "mae": 42.398,
+              "rmse": 43.752,
+              "bias": 42.398,
+              "nasa_score": 5784.57,
+              "mae_by_rul_range": {
+                "0_30": 59.36,
+                "30_60": 42.86,
+                "60_plus": 20.36
+              },
+              "samples": 52,
+              "validation_engines": 52,
+              "training_engines": 208,
+              "validation_seed": 41,
+              "validation_samples": 52,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 4.47
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 42.398,
+                  "rmse": 43.752,
+                  "bias": 42.398,
+                  "nasa_score": 5784.57,
+                  "mae_by_rul_range": {
+                    "0_30": 59.36,
+                    "30_60": 42.86,
+                    "60_plus": 20.36
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 41,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 4.47
+                },
+                {
+                  "mae": 47.54,
+                  "rmse": 48.475,
+                  "bias": 47.54,
+                  "nasa_score": 8121.47,
+                  "mae_by_rul_range": {
+                    "0_30": 59.809,
+                    "30_60": 48.413,
+                    "60_plus": 14.309
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 42,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 46.577,
+                  "rmse": 47.207,
+                  "bias": 46.577,
+                  "nasa_score": 6889.6,
+                  "mae_by_rul_range": {
+                    "0_30": 58.635,
+                    "30_60": 46.645,
+                    "60_plus": 19.135
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 43,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 46.721,
+                  "rmse": 47.39,
+                  "bias": 46.721,
+                  "nasa_score": 7130.27,
+                  "mae_by_rul_range": {
+                    "0_30": 59.163,
+                    "30_60": 46.538,
+                    "60_plus": 18.163
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 44,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 43.633,
+                  "rmse": 44.618,
+                  "bias": 43.633,
+                  "nasa_score": 5799.18,
+                  "mae_by_rul_range": {
+                    "0_30": 59.928,
+                    "30_60": 43.616,
+                    "60_plus": 19.594
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 45,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 45.374,
+                  "stddev": 1.992
+                },
+                "rmse": {
+                  "mean": 46.288,
+                  "stddev": 1.792
+                },
+                "bias": {
+                  "mean": 45.374,
+                  "stddev": 1.992
+                },
+                "nasa_score": {
+                  "mean": 6745.018,
+                  "stddev": 881.024
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 45.636,
+              "rmse": 54.083,
+              "bias": 5.728,
+              "nasa_score": 153229.25,
+              "mae_by_rul_range": {
+                "0_30": 74.013,
+                "30_60": 41.961,
+                "60_plus": 35.774
+              },
+              "samples": 259,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "HistGradientBoostingRegressor",
+            "validation": {
+              "mae": 19.393,
+              "rmse": 24.013,
+              "bias": 10.693,
+              "nasa_score": 946.41,
+              "mae_by_rul_range": {
+                "0_30": 41.646,
+                "30_60": 17.786,
+                "60_plus": 14.823
+              },
+              "samples": 52,
+              "validation_engines": 52,
+              "training_engines": 208,
+              "validation_seed": 41,
+              "validation_samples": 52,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 10.7
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 19.393,
+                  "rmse": 24.013,
+                  "bias": 10.693,
+                  "nasa_score": 946.41,
+                  "mae_by_rul_range": {
+                    "0_30": 41.646,
+                    "30_60": 17.786,
+                    "60_plus": 14.823
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 41,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 10.7
+                },
+                {
+                  "mae": 17.635,
+                  "rmse": 21.601,
+                  "bias": 12.602,
+                  "nasa_score": 641.06,
+                  "mae_by_rul_range": {
+                    "0_30": 33.882,
+                    "30_60": 16.536,
+                    "60_plus": 27.742
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 42,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 13.781,
+                  "rmse": 17.056,
+                  "bias": 7.942,
+                  "nasa_score": 386.15,
+                  "mae_by_rul_range": {
+                    "0_30": 25.311,
+                    "30_60": 13.147,
+                    "60_plus": 21.764
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 43,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 14.229,
+                  "rmse": 19.279,
+                  "bias": 9.113,
+                  "nasa_score": 539.77,
+                  "mae_by_rul_range": {
+                    "0_30": 32.261,
+                    "30_60": 12.652,
+                    "60_plus": 35.808
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 44,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 18.379,
+                  "rmse": 23.071,
+                  "bias": 12.784,
+                  "nasa_score": 1073.59,
+                  "mae_by_rul_range": {
+                    "0_30": 47.18,
+                    "30_60": 16.851,
+                    "60_plus": 11.104
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 45,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 16.683,
+                  "stddev": 2.261
+                },
+                "rmse": {
+                  "mean": 21.004,
+                  "stddev": 2.54
+                },
+                "bias": {
+                  "mean": 10.627,
+                  "stddev": 1.9
+                },
+                "nasa_score": {
+                  "mean": 717.396,
+                  "stddev": 255.509
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 20.237,
+              "rmse": 28.243,
+              "bias": -8.149,
+              "nasa_score": 10121.31,
+              "mae_by_rul_range": {
+                "0_30": 6.373,
+                "30_60": 14.964,
+                "60_plus": 26.946
+              },
+              "samples": 259,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "ConditionAwareHistGradientBoostingRegressor",
+            "validation": {
+              "mae": 18.16,
+              "rmse": 22.641,
+              "bias": 9.959,
+              "nasa_score": 946.74,
+              "mae_by_rul_range": {
+                "0_30": 37.864,
+                "30_60": 15.553,
+                "60_plus": 27.137
+              },
+              "samples": 52,
+              "validation_engines": 52,
+              "training_engines": 208,
+              "validation_seed": 41,
+              "validation_samples": 52,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 14.21
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 18.16,
+                  "rmse": 22.641,
+                  "bias": 9.959,
+                  "nasa_score": 946.74,
+                  "mae_by_rul_range": {
+                    "0_30": 37.864,
+                    "30_60": 15.553,
+                    "60_plus": 27.137
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 41,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 14.21
+                },
+                {
+                  "mae": 18.048,
+                  "rmse": 22.453,
+                  "bias": 13.335,
+                  "nasa_score": 929.35,
+                  "mae_by_rul_range": {
+                    "0_30": 26.234,
+                    "30_60": 17.056,
+                    "60_plus": 33.664
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 42,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 13.323,
+                  "rmse": 17.747,
+                  "bias": 8.673,
+                  "nasa_score": 514.46,
+                  "mae_by_rul_range": {
+                    "0_30": 27.345,
+                    "30_60": 12.942,
+                    "60_plus": 3.961
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 43,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 14.857,
+                  "rmse": 18.134,
+                  "bias": 7.841,
+                  "nasa_score": 368.17,
+                  "mae_by_rul_range": {
+                    "0_30": 29.691,
+                    "30_60": 13.609,
+                    "60_plus": 30.221
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 44,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 17.748,
+                  "rmse": 22.007,
+                  "bias": 12.387,
+                  "nasa_score": 844.38,
+                  "mae_by_rul_range": {
+                    "0_30": 42.327,
+                    "30_60": 16.449,
+                    "60_plus": 11.414
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 45,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 16.427,
+                  "stddev": 1.974
+                },
+                "rmse": {
+                  "mean": 20.596,
+                  "stddev": 2.182
+                },
+                "bias": {
+                  "mean": 10.439,
+                  "stddev": 2.111
+                },
+                "nasa_score": {
+                  "mean": 720.62,
+                  "stddev": 235.261
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 19.722,
+              "rmse": 27.932,
+              "bias": -7.104,
+              "nasa_score": 9543.39,
+              "mae_by_rul_range": {
+                "0_30": 6.23,
+                "30_60": 13.552,
+                "60_plus": 26.529
+              },
+              "samples": 259,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "RandomForestRegressor",
+            "validation": {
+              "mae": 18.272,
+              "rmse": 22.826,
+              "bias": 11.863,
+              "nasa_score": 999.41,
+              "mae_by_rul_range": {
+                "0_30": 40.222,
+                "30_60": 16.75,
+                "60_plus": 13.066
+              },
+              "samples": 52,
+              "validation_engines": 52,
+              "training_engines": 208,
+              "validation_seed": 41,
+              "validation_samples": 52,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 176.89
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 18.272,
+                  "rmse": 22.826,
+                  "bias": 11.863,
+                  "nasa_score": 999.41,
+                  "mae_by_rul_range": {
+                    "0_30": 40.222,
+                    "30_60": 16.75,
+                    "60_plus": 13.066
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 41,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 176.89
+                },
+                {
+                  "mae": 17.985,
+                  "rmse": 22.394,
+                  "bias": 14.642,
+                  "nasa_score": 865.63,
+                  "mae_by_rul_range": {
+                    "0_30": 32.227,
+                    "30_60": 16.99,
+                    "60_plus": 27.632
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 42,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 12.991,
+                  "rmse": 16.054,
+                  "bias": 9.08,
+                  "nasa_score": 289.95,
+                  "mae_by_rul_range": {
+                    "0_30": 22.006,
+                    "30_60": 12.673,
+                    "60_plus": 10.506
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 43,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 13.274,
+                  "rmse": 17.966,
+                  "bias": 8.888,
+                  "nasa_score": 496.15,
+                  "mae_by_rul_range": {
+                    "0_30": 30.934,
+                    "30_60": 11.859,
+                    "60_plus": 28.213
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 44,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 17.329,
+                  "rmse": 21.538,
+                  "bias": 12.604,
+                  "nasa_score": 922.8,
+                  "mae_by_rul_range": {
+                    "0_30": 47.593,
+                    "30_60": 15.845,
+                    "60_plus": 6.795
+                  },
+                  "samples": 52,
+                  "validation_engines": 52,
+                  "training_engines": 208,
+                  "validation_seed": 45,
+                  "validation_samples": 52,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 15.97,
+                  "stddev": 2.339
+                },
+                "rmse": {
+                  "mean": 20.156,
+                  "stddev": 2.671
+                },
+                "bias": {
+                  "mean": 11.415,
+                  "stddev": 2.185
+                },
+                "nasa_score": {
+                  "mean": 714.788,
+                  "stddev": 273.979
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 19.783,
+              "rmse": 27.952,
+              "bias": -7.61,
+              "nasa_score": 9751.14,
+              "mae_by_rul_range": {
+                "0_30": 5.951,
+                "30_60": 14.245,
+                "60_plus": 26.551
+              },
+              "samples": 259,
+              "validation_engines": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "subset": "FD003",
+      "train": {
+        "file": "train_FD003.txt",
+        "rows": 24720,
+        "engines": 100,
+        "cycle_min": 1,
+        "cycle_max": 525,
+        "missing_values": 0,
+        "duplicate_engine_cycles": 0,
+        "ordered_cycles": true,
+        "sensors": 21
+      },
+      "test": {
+        "file": "test_FD003.txt",
+        "rows": 16596,
+        "engines": 100,
+        "cycle_min": 1,
+        "cycle_max": 475,
+        "missing_values": 0,
+        "duplicate_engine_cycles": 0,
+        "ordered_cycles": true,
+        "sensors": 21
+      },
+      "rul_labels": 100,
+      "sha256": {
+        "train": "2abbe9968cc5e8eb091980f51b20f62bb4127336d3482cb52071d53bf23329e2",
+        "test": "299babd63c8d987cef079c4a425429f33b3a34797d803bbe2ad48c29dbd0d790",
+        "rul": "df1e0566306b174a2de41c67a3e7a51877889598b78643fc3e5685259091b7cb"
+      },
+      "benchmark": {
+        "dataset_id": "ds-fd003-3ffa3ae305",
+        "protocol": "fixed MeanBaseline, HistGradientBoosting, train-fitted operating-condition-aware HistGradientBoosting and RandomForest comparison; five predeclared train-only engine holdouts (seeds 41-45); final models fit using all official training engines; official supplied RUL labels are used only for final-cycle reporting after model choices are fixed",
+        "models": [
+          {
+            "algorithm": "MeanBaseline",
+            "validation": {
+              "mae": 49.972,
+              "rmse": 51.931,
+              "bias": 49.972,
+              "nasa_score": 4807.38,
+              "mae_by_rul_range": {
+                "30_60": 54.078,
+                "60_plus": 13.022
+              },
+              "samples": 20,
+              "validation_engines": 20,
+              "training_engines": 80,
+              "validation_seed": 41,
+              "validation_samples": 20,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 1.9
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 49.972,
+                  "rmse": 51.931,
+                  "bias": 49.972,
+                  "nasa_score": 4807.38,
+                  "mae_by_rul_range": {
+                    "30_60": 54.078,
+                    "60_plus": 13.022
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 41,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 1.9
+                },
+                {
+                  "mae": 45.762,
+                  "rmse": 48.51,
+                  "bias": 45.502,
+                  "nasa_score": 3768.15,
+                  "mae_by_rul_range": {
+                    "30_60": 52.965,
+                    "60_plus": 16.951
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 42,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 41.996,
+                  "rmse": 44.106,
+                  "bias": 41.685,
+                  "nasa_score": 2471.53,
+                  "mae_by_rul_range": {
+                    "30_60": 48.218,
+                    "60_plus": 23.331
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 43,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 43.758,
+                  "rmse": 47.131,
+                  "bias": 42.559,
+                  "nasa_score": 3454.79,
+                  "mae_by_rul_range": {
+                    "30_60": 52.942,
+                    "60_plus": 16.205
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 44,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 42.248,
+                  "rmse": 45.462,
+                  "bias": 41.737,
+                  "nasa_score": 3102.36,
+                  "mae_by_rul_range": {
+                    "30_60": 50.487,
+                    "60_plus": 17.532
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 45,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 44.747,
+                  "stddev": 2.937
+                },
+                "rmse": {
+                  "mean": 47.428,
+                  "stddev": 2.7
+                },
+                "bias": {
+                  "mean": 44.291,
+                  "stddev": 3.164
+                },
+                "nasa_score": {
+                  "mean": 3520.842,
+                  "stddev": 774.195
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 38.003,
+              "rmse": 45.07,
+              "bias": 17.823,
+              "nasa_score": 57949.64,
+              "mae_by_rul_range": {
+                "0_30": 76.693,
+                "30_60": 44.0,
+                "60_plus": 22.753
+              },
+              "samples": 100,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "HistGradientBoostingRegressor",
+            "validation": {
+              "mae": 21.868,
+              "rmse": 27.337,
+              "bias": 21.117,
+              "nasa_score": 968.04,
+              "mae_by_rul_range": {
+                "30_60": 22.323,
+                "60_plus": 17.772
+              },
+              "samples": 20,
+              "validation_engines": 20,
+              "training_engines": 80,
+              "validation_seed": 41,
+              "validation_samples": 20,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 5.55
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 21.868,
+                  "rmse": 27.337,
+                  "bias": 21.117,
+                  "nasa_score": 968.04,
+                  "mae_by_rul_range": {
+                    "30_60": 22.323,
+                    "60_plus": 17.772
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 41,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 5.55
+                },
+                {
+                  "mae": 22.096,
+                  "rmse": 26.619,
+                  "bias": 19.362,
+                  "nasa_score": 655.08,
+                  "mae_by_rul_range": {
+                    "30_60": 20.273,
+                    "60_plus": 29.391
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 42,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 14.478,
+                  "rmse": 17.217,
+                  "bias": 9.869,
+                  "nasa_score": 120.67,
+                  "mae_by_rul_range": {
+                    "30_60": 13.01,
+                    "60_plus": 18.879
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 43,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 11.631,
+                  "rmse": 15.506,
+                  "bias": 6.822,
+                  "nasa_score": 82.86,
+                  "mae_by_rul_range": {
+                    "30_60": 8.21,
+                    "60_plus": 21.893
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 44,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 15.419,
+                  "rmse": 20.876,
+                  "bias": 4.403,
+                  "nasa_score": 408.21,
+                  "mae_by_rul_range": {
+                    "30_60": 16.467,
+                    "60_plus": 12.274
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 45,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 17.098,
+                  "stddev": 4.179
+                },
+                "rmse": {
+                  "mean": 21.511,
+                  "stddev": 4.794
+                },
+                "bias": {
+                  "mean": 12.315,
+                  "stddev": 6.721
+                },
+                "nasa_score": {
+                  "mean": 446.972,
+                  "stddev": 333.279
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 12.958,
+              "rmse": 17.532,
+              "bias": 1.893,
+              "nasa_score": 663.75,
+              "mae_by_rul_range": {
+                "0_30": 4.675,
+                "30_60": 13.116,
+                "60_plus": 15.709
+              },
+              "samples": 100,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "ConditionAwareHistGradientBoostingRegressor",
+            "validation": {
+              "mae": 21.072,
+              "rmse": 25.742,
+              "bias": 19.775,
+              "nasa_score": 710.09,
+              "mae_by_rul_range": {
+                "30_60": 21.273,
+                "60_plus": 19.259
+              },
+              "samples": 20,
+              "validation_engines": 20,
+              "training_engines": 80,
+              "validation_seed": 41,
+              "validation_samples": 20,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 8.85
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 21.072,
+                  "rmse": 25.742,
+                  "bias": 19.775,
+                  "nasa_score": 710.09,
+                  "mae_by_rul_range": {
+                    "30_60": 21.273,
+                    "60_plus": 19.259
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 41,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 8.85
+                },
+                {
+                  "mae": 21.389,
+                  "rmse": 25.975,
+                  "bias": 19.318,
+                  "nasa_score": 425.64,
+                  "mae_by_rul_range": {
+                    "30_60": 19.693,
+                    "60_plus": 28.175
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 42,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 15.665,
+                  "rmse": 18.018,
+                  "bias": 9.258,
+                  "nasa_score": 129.69,
+                  "mae_by_rul_range": {
+                    "30_60": 13.51,
+                    "60_plus": 22.131
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 43,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 12.19,
+                  "rmse": 15.513,
+                  "bias": 7.145,
+                  "nasa_score": 83.71,
+                  "mae_by_rul_range": {
+                    "30_60": 9.005,
+                    "60_plus": 21.745
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 44,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 14.702,
+                  "rmse": 19.318,
+                  "bias": 4.94,
+                  "nasa_score": 220.0,
+                  "mae_by_rul_range": {
+                    "30_60": 15.824,
+                    "60_plus": 11.335
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 45,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 17.004,
+                  "stddev": 3.634
+                },
+                "rmse": {
+                  "mean": 20.913,
+                  "stddev": 4.22
+                },
+                "bias": {
+                  "mean": 12.087,
+                  "stddev": 6.243
+                },
+                "nasa_score": {
+                  "mean": 313.826,
+                  "stddev": 230.3
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 13.191,
+              "rmse": 17.517,
+              "bias": 2.226,
+              "nasa_score": 621.63,
+              "mae_by_rul_range": {
+                "0_30": 5.024,
+                "30_60": 14.131,
+                "60_plus": 15.626
+              },
+              "samples": 100,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "RandomForestRegressor",
+            "validation": {
+              "mae": 20.212,
+              "rmse": 25.928,
+              "bias": 19.17,
+              "nasa_score": 1020.03,
+              "mae_by_rul_range": {
+                "30_60": 21.224,
+                "60_plus": 11.1
+              },
+              "samples": 20,
+              "validation_engines": 20,
+              "training_engines": 80,
+              "validation_seed": 41,
+              "validation_samples": 20,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 47.73
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 20.212,
+                  "rmse": 25.928,
+                  "bias": 19.17,
+                  "nasa_score": 1020.03,
+                  "mae_by_rul_range": {
+                    "30_60": 21.224,
+                    "60_plus": 11.1
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 41,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 47.73
+                },
+                {
+                  "mae": 22.48,
+                  "rmse": 27.831,
+                  "bias": 21.251,
+                  "nasa_score": 810.47,
+                  "mae_by_rul_range": {
+                    "30_60": 20.193,
+                    "60_plus": 31.627
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 42,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 14.273,
+                  "rmse": 18.389,
+                  "bias": 9.63,
+                  "nasa_score": 158.91,
+                  "mae_by_rul_range": {
+                    "30_60": 12.255,
+                    "60_plus": 20.327
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 43,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 11.922,
+                  "rmse": 14.416,
+                  "bias": 6.246,
+                  "nasa_score": 66.58,
+                  "mae_by_rul_range": {
+                    "30_60": 9.42,
+                    "60_plus": 19.429
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 44,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 14.338,
+                  "rmse": 18.985,
+                  "bias": 3.164,
+                  "nasa_score": 257.07,
+                  "mae_by_rul_range": {
+                    "30_60": 15.947,
+                    "60_plus": 9.511
+                  },
+                  "samples": 20,
+                  "validation_engines": 20,
+                  "training_engines": 80,
+                  "validation_seed": 45,
+                  "validation_samples": 20,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 16.645,
+                  "stddev": 4.001
+                },
+                "rmse": {
+                  "mean": 21.11,
+                  "stddev": 5.002
+                },
+                "bias": {
+                  "mean": 11.892,
+                  "stddev": 7.124
+                },
+                "nasa_score": {
+                  "mean": 462.612,
+                  "stddev": 380.275
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 14.121,
+              "rmse": 18.608,
+              "bias": 1.703,
+              "nasa_score": 779.43,
+              "mae_by_rul_range": {
+                "0_30": 6.219,
+                "30_60": 14.097,
+                "60_plus": 16.808
+              },
+              "samples": 100,
+              "validation_engines": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "subset": "FD004",
+      "train": {
+        "file": "train_FD004.txt",
+        "rows": 61249,
+        "engines": 249,
+        "cycle_min": 1,
+        "cycle_max": 543,
+        "missing_values": 0,
+        "duplicate_engine_cycles": 0,
+        "ordered_cycles": true,
+        "sensors": 21
+      },
+      "test": {
+        "file": "test_FD004.txt",
+        "rows": 41214,
+        "engines": 248,
+        "cycle_min": 1,
+        "cycle_max": 486,
+        "missing_values": 0,
+        "duplicate_engine_cycles": 0,
+        "ordered_cycles": true,
+        "sensors": 21
+      },
+      "rul_labels": 248,
+      "sha256": {
+        "train": "27ef6160b6a1dcb2613a88de9c239f763b223f02cdc41dc5cdedc5dc189b6218",
+        "test": "1dc675fff0624bac10786927c6715b37d1297657137400d2b1a3138d777a3ba5",
+        "rul": "196b836b85a95ac7fdbbf29c5fdf1657382eafa445644d114ffaaf50dc2975e1"
+      },
+      "benchmark": {
+        "dataset_id": "ds-fd004-4bc6cc91ee",
+        "protocol": "fixed MeanBaseline, HistGradientBoosting, train-fitted operating-condition-aware HistGradientBoosting and RandomForest comparison; five predeclared train-only engine holdouts (seeds 41-45); final models fit using all official training engines; official supplied RUL labels are used only for final-cycle reporting after model choices are fixed",
+        "models": [
+          {
+            "algorithm": "MeanBaseline",
+            "validation": {
+              "mae": 40.913,
+              "rmse": 43.32,
+              "bias": 40.696,
+              "nasa_score": 6572.09,
+              "mae_by_rul_range": {
+                "0_30": 65.242,
+                "30_60": 47.189,
+                "60_plus": 24.191
+              },
+              "samples": 50,
+              "validation_engines": 50,
+              "training_engines": 199,
+              "validation_seed": 41,
+              "validation_samples": 50,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 2.46
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 40.913,
+                  "rmse": 43.32,
+                  "bias": 40.696,
+                  "nasa_score": 6572.09,
+                  "mae_by_rul_range": {
+                    "0_30": 65.242,
+                    "30_60": 47.189,
+                    "60_plus": 24.191
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 41,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 2.46
+                },
+                {
+                  "mae": 43.485,
+                  "rmse": 45.368,
+                  "bias": 43.283,
+                  "nasa_score": 7046.86,
+                  "mae_by_rul_range": {
+                    "0_30": 63.943,
+                    "30_60": 49.359,
+                    "60_plus": 25.644
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 42,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 44.191,
+                  "rmse": 46.459,
+                  "bias": 44.191,
+                  "nasa_score": 8620.36,
+                  "mae_by_rul_range": {
+                    "0_30": 65.571,
+                    "30_60": 51.132,
+                    "60_plus": 26.071
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 43,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 45.103,
+                  "rmse": 47.422,
+                  "bias": 44.468,
+                  "nasa_score": 9339.53,
+                  "mae_by_rul_range": {
+                    "0_30": 64.608,
+                    "30_60": 51.274,
+                    "60_plus": 23.34
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 44,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 42.93,
+                  "rmse": 44.847,
+                  "bias": 42.282,
+                  "nasa_score": 6794.7,
+                  "mae_by_rul_range": {
+                    "30_60": 48.468,
+                    "60_plus": 23.292
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 45,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 43.324,
+                  "stddev": 1.408
+                },
+                "rmse": {
+                  "mean": 45.483,
+                  "stddev": 1.401
+                },
+                "bias": {
+                  "mean": 42.984,
+                  "stddev": 1.377
+                },
+                "nasa_score": {
+                  "mean": 7674.708,
+                  "stddev": 1100.024
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 46.753,
+              "rmse": 54.902,
+              "bias": 6.433,
+              "nasa_score": 189682.81,
+              "mae_by_rul_range": {
+                "0_30": 78.581,
+                "30_60": 49.696,
+                "60_plus": 35.57
+              },
+              "samples": 248,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "HistGradientBoostingRegressor",
+            "validation": {
+              "mae": 23.72,
+              "rmse": 28.445,
+              "bias": 15.609,
+              "nasa_score": 2507.4,
+              "mae_by_rul_range": {
+                "0_30": 33.454,
+                "30_60": 22.632,
+                "60_plus": 24.005
+              },
+              "samples": 50,
+              "validation_engines": 50,
+              "training_engines": 199,
+              "validation_seed": 41,
+              "validation_samples": 50,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 4.71
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 23.72,
+                  "rmse": 28.445,
+                  "bias": 15.609,
+                  "nasa_score": 2507.4,
+                  "mae_by_rul_range": {
+                    "0_30": 33.454,
+                    "30_60": 22.632,
+                    "60_plus": 24.005
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 41,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 4.71
+                },
+                {
+                  "mae": 18.632,
+                  "rmse": 22.665,
+                  "bias": 13.449,
+                  "nasa_score": 653.05,
+                  "mae_by_rul_range": {
+                    "0_30": 32.29,
+                    "30_60": 19.565,
+                    "60_plus": 14.997
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 42,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 17.752,
+                  "rmse": 22.289,
+                  "bias": 7.912,
+                  "nasa_score": 987.2,
+                  "mae_by_rul_range": {
+                    "0_30": 15.352,
+                    "30_60": 19.202,
+                    "60_plus": 14.883
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 43,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 23.258,
+                  "rmse": 28.527,
+                  "bias": 15.926,
+                  "nasa_score": 1944.72,
+                  "mae_by_rul_range": {
+                    "0_30": 41.89,
+                    "30_60": 23.578,
+                    "60_plus": 19.19
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 44,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 18.494,
+                  "rmse": 23.642,
+                  "bias": 8.241,
+                  "nasa_score": 1176.84,
+                  "mae_by_rul_range": {
+                    "30_60": 18.052,
+                    "60_plus": 20.062
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 45,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 20.371,
+                  "stddev": 2.567
+                },
+                "rmse": {
+                  "mean": 25.114,
+                  "stddev": 2.789
+                },
+                "bias": {
+                  "mean": 12.227,
+                  "stddev": 3.496
+                },
+                "nasa_score": {
+                  "mean": 1453.842,
+                  "stddev": 676.269
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 21.715,
+              "rmse": 28.977,
+              "bias": -6.913,
+              "nasa_score": 6021.49,
+              "mae_by_rul_range": {
+                "0_30": 8.715,
+                "30_60": 15.962,
+                "60_plus": 27.377
+              },
+              "samples": 248,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "ConditionAwareHistGradientBoostingRegressor",
+            "validation": {
+              "mae": 21.132,
+              "rmse": 25.596,
+              "bias": 13.446,
+              "nasa_score": 1073.04,
+              "mae_by_rul_range": {
+                "0_30": 26.538,
+                "30_60": 20.633,
+                "60_plus": 21.085
+              },
+              "samples": 50,
+              "validation_engines": 50,
+              "training_engines": 199,
+              "validation_seed": 41,
+              "validation_samples": 50,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 7.43
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 21.132,
+                  "rmse": 25.596,
+                  "bias": 13.446,
+                  "nasa_score": 1073.04,
+                  "mae_by_rul_range": {
+                    "0_30": 26.538,
+                    "30_60": 20.633,
+                    "60_plus": 21.085
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 41,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 7.43
+                },
+                {
+                  "mae": 16.994,
+                  "rmse": 21.217,
+                  "bias": 11.052,
+                  "nasa_score": 580.71,
+                  "mae_by_rul_range": {
+                    "0_30": 29.401,
+                    "30_60": 19.27,
+                    "60_plus": 9.739
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 42,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 17.377,
+                  "rmse": 21.584,
+                  "bias": 7.731,
+                  "nasa_score": 642.59,
+                  "mae_by_rul_range": {
+                    "0_30": 22.2,
+                    "30_60": 17.602,
+                    "60_plus": 16.238
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 43,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 22.255,
+                  "rmse": 27.901,
+                  "bias": 15.593,
+                  "nasa_score": 1977.4,
+                  "mae_by_rul_range": {
+                    "0_30": 36.072,
+                    "30_60": 24.035,
+                    "60_plus": 14.613
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 44,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 16.107,
+                  "rmse": 19.626,
+                  "bias": 7.263,
+                  "nasa_score": 381.58,
+                  "mae_by_rul_range": {
+                    "30_60": 14.544,
+                    "60_plus": 21.648
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 45,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 18.773,
+                  "stddev": 2.446
+                },
+                "rmse": {
+                  "mean": 23.185,
+                  "stddev": 3.071
+                },
+                "bias": {
+                  "mean": 11.017,
+                  "stddev": 3.217
+                },
+                "nasa_score": {
+                  "mean": 931.064,
+                  "stddev": 569.715
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 21.251,
+              "rmse": 28.753,
+              "bias": -7.446,
+              "nasa_score": 5983.71,
+              "mae_by_rul_range": {
+                "0_30": 7.845,
+                "30_60": 14.271,
+                "60_plus": 27.341
+              },
+              "samples": 248,
+              "validation_engines": 0
+            }
+          },
+          {
+            "algorithm": "RandomForestRegressor",
+            "validation": {
+              "mae": 20.771,
+              "rmse": 25.73,
+              "bias": 13.682,
+              "nasa_score": 1476.27,
+              "mae_by_rul_range": {
+                "0_30": 29.451,
+                "30_60": 20.611,
+                "60_plus": 19.452
+              },
+              "samples": 50,
+              "validation_engines": 50,
+              "training_engines": 199,
+              "validation_seed": 41,
+              "validation_samples": 50,
+              "validation_split": "seeded engine_id holdout (80/20)",
+              "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+              "duration_seconds": 137.76
+            },
+            "repeated_validation": {
+              "seeds": [
+                41,
+                42,
+                43,
+                44,
+                45
+              ],
+              "runs": [
+                {
+                  "mae": 20.771,
+                  "rmse": 25.73,
+                  "bias": 13.682,
+                  "nasa_score": 1476.27,
+                  "mae_by_rul_range": {
+                    "0_30": 29.451,
+                    "30_60": 20.611,
+                    "60_plus": 19.452
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 41,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125",
+                  "duration_seconds": 137.76
+                },
+                {
+                  "mae": 18.262,
+                  "rmse": 22.283,
+                  "bias": 12.224,
+                  "nasa_score": 730.14,
+                  "mae_by_rul_range": {
+                    "0_30": 38.254,
+                    "30_60": 20.374,
+                    "60_plus": 10.875
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 42,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 17.017,
+                  "rmse": 21.43,
+                  "bias": 7.386,
+                  "nasa_score": 828.98,
+                  "mae_by_rul_range": {
+                    "0_30": 11.861,
+                    "30_60": 18.025,
+                    "60_plus": 15.486
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 43,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 22.59,
+                  "rmse": 27.785,
+                  "bias": 16.154,
+                  "nasa_score": 1462.69,
+                  "mae_by_rul_range": {
+                    "0_30": 38.97,
+                    "30_60": 23.328,
+                    "60_plus": 17.645
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 44,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                },
+                {
+                  "mae": 17.291,
+                  "rmse": 21.496,
+                  "bias": 9.254,
+                  "nasa_score": 692.42,
+                  "mae_by_rul_range": {
+                    "30_60": 16.804,
+                    "60_plus": 19.018
+                  },
+                  "samples": 50,
+                  "validation_engines": 50,
+                  "training_engines": 199,
+                  "validation_seed": 45,
+                  "validation_samples": 50,
+                  "validation_split": "seeded engine_id holdout (80/20)",
+                  "validation_protocol": "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+                }
+              ],
+              "summary": {
+                "mae": {
+                  "mean": 19.186,
+                  "stddev": 2.156
+                },
+                "rmse": {
+                  "mean": 23.745,
+                  "stddev": 2.562
+                },
+                "bias": {
+                  "mean": 11.74,
+                  "stddev": 3.119
+                },
+                "nasa_score": {
+                  "mean": 1038.1,
+                  "stddev": 355.059
+                }
+              }
+            },
+            "final_cycle_test": {
+              "mae": 21.756,
+              "rmse": 29.33,
+              "bias": -7.064,
+              "nasa_score": 6872.44,
+              "mae_by_rul_range": {
+                "0_30": 9.349,
+                "30_60": 14.078,
+                "60_plus": 27.686
+              },
+              "samples": 248,
+              "validation_engines": 0
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

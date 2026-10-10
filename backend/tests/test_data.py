@@ -1,6 +1,6 @@
 import pytest
 
-from backend.app.data import CMAPSS_COLUMNS, MAX_IMPORT_FILE_BYTES, feature_vector, parse_cmapss, parse_rul, training_examples, validate_records
+from backend.app.data import CMAPSS_COLUMNS, MAX_IMPORT_FILE_BYTES, feature_vector, make_dataset_engines, parse_cmapss, parse_rul, training_examples, validate_records
 
 
 def rows_for(*engine_ids: int) -> bytes:
@@ -61,3 +61,11 @@ def test_trailing_features_and_targets_stay_within_engine():
     assert targets[3:] == [2, 1, 0]
     assert engine_ids[:3] == [1, 1, 1]
     assert engine_ids[3:] == [2, 2, 2]
+
+
+def test_test_rul_labels_follow_file_engine_order_even_when_ids_are_not_sorted():
+    records = parse_cmapss(rows_for(20, 10), "test_FD001.txt")
+
+    engines = make_dataset_engines(records, [5, 7])
+
+    assert [(engine["id"], engine["rul"]) for engine in engines] == [("ENG-010", 7), ("ENG-020", 5)]

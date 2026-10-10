@@ -12,7 +12,7 @@ flowchart TB
   PARSE["Parse and validate 26-column records<br/>finite values · ordered cycles · unique engine/cycle<br/>test engine count matches RUL labels"]
   VALID{"Dataset valid?"}
   BAD_DATA["HTTP 422 · invalid or incomplete import"]
-  FINGERPRINT["SHA-256 per file + combined content fingerprint"]
+  FINGERPRINT["SHA-256 per file + combined fingerprint<br/>rechecked when source files are restored"]
   EXISTING{"Fingerprint already registered?"}
   REUSE["Load and select existing dataset version"]
   STAGE["Write staging directory<br/>atomic rename · SQLite dataset record"]
@@ -25,8 +25,8 @@ flowchart TB
   WORKER["Separate worker polls SQLite<br/>single file lock · BEGIN IMMEDIATE claim"]
   TRAJECTORIES["Load complete training trajectories<br/>from selected dataset"]
   FEATURES["Build capped RUL labels + trailing features<br/>windows stay within each engine"]
-  SPLIT["Seeded 80/20 holdout by engine ID<br/>official test labels reserved for post-selection evaluation"]
-  FIT["Fit selected estimator<br/>MeanBaseline · RandomForest · HistGradientBoosting<br/>optional PyTorch LSTM · 30-cycle window"]
+  SPLIT["Seeded 80/20 engine-ID holdout<br/>validate one censored observation at 80% trajectory life<br/>official test labels reserved for post-selection"]
+  FIT["Fit validation estimator, then refit on all training engines<br/>MeanBaseline · RandomForest · HistGradientBoosting<br/>condition-aware HGB · optional PyTorch LSTM"]
   METRICS["Calculate validation MAE · RMSE · bias · NASA score"]
   CANDIDATE[("SQLite candidate record<br/>versioned artifact · experiment JSON")]
   MLFLOW["Local MLflow run<br/>tracking failure becomes warning; training continues"]

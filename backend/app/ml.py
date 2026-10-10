@@ -14,6 +14,10 @@ import numpy as np
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.cluster import KMeans
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.base import BaseEstimator, TransformerMixin
 
 from . import db
 from .data import group_engines, training_examples, feature_vector
@@ -75,47 +79,123 @@ def metrics_for(y_true: list[float], y_pred: list[float]) -> dict:
             "samples": len(y_true), "validation_engines": 0}
 
 
-def make_estimator(algorithm: str):
+class OperatingConditionFeatures(BaseEstimator, TransformerMixin):
+    """Add train-fitted, setting-clustered sensor residuals without replacing raw features."""
+    def __init__(self, seed: int = 41):
+        self.seed = seed
+
+    def fit(self, X, _y=None):
+        values = np.asarray(X, dtype=np.float32)
+        settings = np.unique(values[:, :3], axis=0)
+        self.settings_scaler_ = StandardScaler().fit(settings)
+        unique_settings = self.settings_scaler_.transform(settings)
+        self.cluster_count_ = min(6, len(unique_settings))
+        self.clusterer_ = None if self.cluster_count_ == 1 else KMeans(
+            n_clusters=self.cluster_count_, random_state=self.seed, n_init=10
+        ).fit(unique_settings)
+        labels = self._labels(values)
+        self.centers_ = np.zeros((self.cluster_count_, 21), dtype=np.float32)
+        self.scales_ = np.ones((self.cluster_count_, 21), dtype=np.float32)
+        for cluster in range(self.cluster_count_):
+            sensors = values[labels == cluster, 3:24]
+            if len(sensors):
+                self.centers_[cluster] = sensors.mean(axis=0)
+                scale = sensors.std(axis=0)
+                self.scales_[cluster] = np.where(scale < 1e-6, 1.0, scale)
+        return self
+
+    def _labels(self, values):
+        settings = self.settings_scaler_.transform(values[:, :3])
+        return np.zeros(len(values), dtype=int) if self.clusterer_ is None else self.clusterer_.predict(settings)
+
+    def transform(self, X):
+        values = np.asarray(X, dtype=np.float32)
+        labels = self._labels(values)
+        center, scale = self.centers_[labels], self.scales_[labels]
+        normalized_current = (values[:, 3:24] - center) / scale
+        normalized_means = (values[:, 25:67:2] - center) / scale
+        normalized_deltas = values[:, 26:67:2] / scale
+        encoded_conditions = np.eye(self.cluster_count_, dtype=np.float32)[labels]
+        return np.concatenate((values, encoded_conditions, normalized_current, normalized_means, normalized_deltas), axis=1)
+
+
+def make_estimator(algorithm: str, seed: int = 41):
     if algorithm == "MeanBaseline":
         return DummyRegressor(strategy="mean")
     if algorithm == "RandomForestRegressor":
-        return RandomForestRegressor(n_estimators=60, min_samples_leaf=2, max_features=0.8, n_jobs=min(4, os.cpu_count() or 1), random_state=41)
+        return RandomForestRegressor(n_estimators=60, min_samples_leaf=2, max_features=0.8, n_jobs=min(4, os.cpu_count() or 1), random_state=seed)
     if algorithm == "HistGradientBoostingRegressor":
-        return HistGradientBoostingRegressor(max_iter=90, max_leaf_nodes=20, l2_regularization=0.1, random_state=41)
-    raise ValueError("Choose MeanBaseline, HistGradientBoostingRegressor or RandomForestRegressor.")
+        return HistGradientBoostingRegressor(max_iter=90, max_leaf_nodes=20, l2_regularization=0.1, random_state=seed)
+    if algorithm == "ConditionAwareHistGradientBoostingRegressor":
+        return make_pipeline(OperatingConditionFeatures(seed), HistGradientBoostingRegressor(
+            max_iter=90, max_leaf_nodes=20, l2_regularization=0.1, random_state=seed
+        ))
+    raise ValueError("Choose MeanBaseline, HistGradientBoostingRegressor, ConditionAwareHistGradientBoostingRegressor or RandomForestRegressor.")
 
 
-def fit_candidate(records: list[dict], algorithm: str, dataset_id: str | None = None, training_job_id: str | None = None) -> dict:
-    started = time.perf_counter()
+def censored_validation_examples(records: list[dict], engine_ids: set[int], cap_rul: int = 125) -> tuple[list[list[float]], list[float]]:
+    grouped = group_engines(records)
+    features, targets = [], []
+    for engine_id in sorted(engine_ids):
+        rows = grouped[engine_id]
+        cutoff = min(max(0, int((len(rows) - 1) * 0.8)), max(0, len(rows) - 2))
+        observation = rows[cutoff]
+        features.append(feature_vector(observation, rows[max(0, cutoff - 4):cutoff]))
+        targets.append(float(min(rows[-1]["cycle"] - observation["cycle"], cap_rul)))
+    return features, targets
+
+
+def validation_metrics(records: list[dict], algorithm: str, seed: int = 41) -> dict:
     grouped = group_engines(records)
     engine_ids = sorted(grouped)
     if len(engine_ids) < 3:
         raise ValueError("At least three complete engines are required for an engine-level training split.")
     shuffled = engine_ids[:]
-    random.Random(41).shuffle(shuffled)
+    random.Random(seed).shuffle(shuffled)
     validation_ids = set(shuffled[: max(1, round(len(shuffled) * 0.2))])
     train_rows = [row for row in records if row["engine_id"] not in validation_ids]
     train_X, train_y, _ = training_examples(train_rows)
-    estimator = make_estimator(algorithm)
-    estimator.fit(np.asarray(train_X, dtype=np.float32), np.asarray(train_y, dtype=np.float32))
-    val_X, val_y, _ = training_examples([row for row in records if row["engine_id"] in validation_ids])
-    val_pred = np.clip(estimator.predict(np.asarray(val_X, dtype=np.float32)), 0, None).tolist()
+    validation_rows = [row for row in records if row["engine_id"] in validation_ids]
+    val_X, val_y = censored_validation_examples(validation_rows, validation_ids)
+    validation_estimator = make_estimator(algorithm, seed)
+    validation_estimator.fit(np.asarray(train_X, dtype=np.float32), np.asarray(train_y, dtype=np.float32))
+    val_pred = np.clip(validation_estimator.predict(np.asarray(val_X, dtype=np.float32)), 0, None).tolist()
     metrics = metrics_for(val_y, val_pred)
     metrics["validation_engines"] = len(validation_ids)
     metrics["training_engines"] = len(engine_ids) - len(validation_ids)
+    metrics["validation_seed"] = seed
+    metrics["validation_samples"] = len(val_y)
+    metrics["validation_split"] = "seeded engine_id holdout (80/20)"
+    metrics["validation_protocol"] = "one observation at 80% of each held-out training trajectory; remaining RUL capped at 125"
+    return metrics
+
+
+def _fit_with_validation(records: list[dict], algorithm: str, seed: int = 41) -> tuple[object, np.ndarray, dict]:
+    started = time.perf_counter()
+    metrics = validation_metrics(records, algorithm, seed)
+
+    full_X, full_y, _ = training_examples(records)
+    estimator = make_estimator(algorithm, seed)
+    estimator.fit(np.asarray(full_X, dtype=np.float32), np.asarray(full_y, dtype=np.float32))
     metrics["duration_seconds"] = round(time.perf_counter() - started, 2)
-    metrics["validation_split"] = "engine_id holdout (80/20)"
+    medians = np.median(np.asarray(full_X, dtype=np.float32), axis=0)
+    return estimator, medians, metrics
+
+
+def fit_candidate(records: list[dict], algorithm: str, dataset_id: str | None = None, training_job_id: str | None = None) -> dict:
+    estimator, medians, metrics = _fit_with_validation(records, algorithm)
 
     model_id = f"fc-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6]}"
     artifact = MODEL_DIR / f"{model_id}.joblib"
-    bundle = {"estimator": estimator, "medians": np.median(np.asarray(train_X, dtype=np.float32), axis=0).tolist()}
+    bundle = {"estimator": estimator, "medians": medians.tolist()}
     joblib.dump(bundle, artifact)
     MODEL_CACHE[model_id] = bundle
     db.execute("INSERT INTO models (id, algorithm, status, created_at, metrics, artifact_path, dataset_id, parent_id, training_job_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                (model_id, algorithm, "candidate", utcnow(), json.dumps(metrics), str(artifact.relative_to(ROOT)), dataset_id,
                 (db.one("SELECT id FROM models WHERE status='active' ORDER BY created_at DESC LIMIT 1") or {}).get("id"), training_job_id))
     experiment = {"model_id": model_id, "algorithm": algorithm, "dataset_id": dataset_id, "metrics": metrics,
-                  "created_at": utcnow(), "seed": 41, "feature_version": "raw-plus-trailing-5-v1"}
+                  "created_at": utcnow(), "seed": 41,
+                  "feature_version": "raw-plus-trailing-5+condition-clusters-v1" if algorithm == "ConditionAwareHistGradientBoostingRegressor" else "raw-plus-trailing-5-v1"}
     tracking = log_mlflow(experiment, artifact)
     if tracking.get("run_id"):
         metrics["mlflow_run_id"] = tracking["run_id"]
@@ -127,10 +207,10 @@ def fit_candidate(records: list[dict], algorithm: str, dataset_id: str | None = 
 
 def load_estimator(model: dict):
     model_id = model["id"]
+    path = (ROOT / model["artifact_path"]).resolve()
+    if not path.is_relative_to(MODEL_DIR.resolve()) or not path.is_file():
+        raise ValueError("Model artifact is missing or outside the managed model directory.")
     if model_id not in MODEL_CACHE:
-        path = (ROOT / model["artifact_path"]).resolve()
-        if not path.is_relative_to(MODEL_DIR.resolve()) or not path.is_file():
-            raise ValueError("Model artifact is missing or outside the managed model directory.")
         if model["algorithm"] == "LSTM":
             try:
                 import torch
@@ -173,15 +253,17 @@ def predict(model: dict, history: list[dict]) -> float:
     return max(0.0, float(estimator.predict(np.asarray([vector], dtype=np.float32))[0]))
 
 
-def bootstrap_model(records: list[dict]) -> dict:
+def bootstrap_model(records: list[dict], dataset_id: str = "demo-fd001-v1") -> dict:
     existing = db.one("SELECT * FROM models WHERE status='active' ORDER BY created_at DESC LIMIT 1")
     if existing:
         try:
             load_estimator(existing)
+            if existing.get("dataset_id") is None:
+                db.execute("UPDATE models SET dataset_id=? WHERE id=?", (dataset_id, existing["id"]))
             return db.decode(existing, "metrics")
         except (OSError, ValueError, KeyError):
             db.execute("UPDATE models SET status='retired' WHERE id=?", (existing["id"],))
-    result = fit_candidate(records, "HistGradientBoostingRegressor")
+    result = fit_candidate(records, "HistGradientBoostingRegressor", dataset_id)
     db.execute("UPDATE models SET status='active' WHERE id=?", (result["model_id"],))
     return db.decode(db.one("SELECT * FROM models WHERE id=?", (result["model_id"],)), "metrics")
 

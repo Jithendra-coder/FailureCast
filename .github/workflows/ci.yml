@@ -2,6 +2,8 @@ name: build
 on:
   push:
   pull_request:
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,7 +18,108 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m pytest -q
       - run: python -m compileall -q backend
+      - run: pip-audit -r requirements-dev.txt -r requirements-deep-learning.txt --strict
       - run: npm ci
+        working-directory: frontend
+      - run: npm audit --audit-level=moderate
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
+      - name: Install Chromium for browser tests
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Create isolated demo deployment credentials
+        run: |
+          mkdir -p .e2e-source/data .e2e-source/artifacts
+          python - <<'PY'
+          import os
+          import secrets
+          password = secrets.token_urlsafe(24)
+          values = {
+              'FAILURECAST_ADMIN_PASSWORD': password,
+              'FAILURECAST_SECRET_KEY': secrets.token_urlsafe(48),
+              'FAILURECAST_PORT': '18100',
+              'FAILURECAST_DATA_DIR': './.e2e-source/data',
+              'FAILURECAST_ARTIFACT_DIR': './.e2e-source/artifacts',
+              'FAILURECAST_UID': '1001',
+              'FAILURECAST_GID': '1001',
+              'FAILURECAST_ALLOWED_ORIGINS': 'http://127.0.0.1:18100',
+          }
+          with open('.env.e2e', 'w', encoding='utf-8') as env_file:
+              env_file.writelines(f'{name}={value}\n' for name, value in values.items())
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as env_file:
+              env_file.write(f"FAILURECAST_E2E_PASSWORD={password}\n")
+          PY
+      - name: Start isolated API and worker
+        run: docker compose --env-file .env.e2e --project-name failurecast-e2e up --build -d
+      - name: Wait for API readiness
+        run: |
+          python - <<'PY'
+          import time
+          import urllib.request
+          deadline = time.monotonic() + 240
+          while time.monotonic() < deadline:
+              try:
+                  with urllib.request.urlopen('http://127.0.0.1:18100/api/v1/ready', timeout=3) as response:
+                      if response.status == 200:
+                          break
+              except Exception:
+                  time.sleep(2)
+          else:
+              raise SystemExit('FailureCast API did not become ready within 240 seconds.')
+          PY
+      - name: Run browser journeys
+        env:
+          FAILURECAST_E2E_URL: http://127.0.0.1:18100
+        run: npm run test:e2e
+        working-directory: frontend
+      - name: Upload browser failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failurecast-browser-test-results
+          path: frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Stop demo stack for a consistent backup
+        run: docker compose --env-file .env.e2e --project-name failurecast-e2e down
+      - name: Verify and restore the demo stack backup
+        run: |
+          python -m backend.app.backup create --source .e2e-source --output "$RUNNER_TEMP/failurecast-e2e.tar.gz"
+          python -m backend.app.backup verify --archive "$RUNNER_TEMP/failurecast-e2e.tar.gz"
+          python -m backend.app.backup restore --archive "$RUNNER_TEMP/failurecast-e2e.tar.gz" --destination ./.e2e-restore
+          FAILURECAST_PORT=18101 FAILURECAST_DATA_DIR=./.e2e-restore/data FAILURECAST_ARTIFACT_DIR=./.e2e-restore/artifacts FAILURECAST_ALLOWED_ORIGINS=http://127.0.0.1:18101 docker compose --env-file .env.e2e --project-name failurecast-e2e-restored up -d
+          python - <<'PY'
+          import http.cookiejar
+          import json
+          import os
+          import time
+          import urllib.request
+          base = 'http://127.0.0.1:18101'
+          deadline = time.monotonic() + 240
+          while time.monotonic() < deadline:
+              try:
+                  with urllib.request.urlopen(base + '/api/v1/ready', timeout=3) as response:
+                      if response.status == 200:
+                          break
+              except Exception:
+                  time.sleep(2)
+          else:
+              raise SystemExit('Restored FailureCast API did not become ready within 240 seconds.')
+          opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+          login = urllib.request.Request(base + '/api/v1/auth/login', data=json.dumps({'password': os.environ['FAILURECAST_E2E_PASSWORD']}).encode(), headers={'Content-Type': 'application/json', 'Origin': base})
+          opener.open(login, timeout=10).close()
+          with opener.open(base + '/api/v1/overview', timeout=10) as response:
+              overview = json.load(response)
+          with opener.open(base + '/api/v1/models', timeout=10) as response:
+              models = json.load(response)['items']
+          assert overview['simulation_only'] is True
+          assert overview['model']['id'] in {model['id'] for model in models}
+          assert any(model['status'] == 'active' for model in models)
+          PY
+      - name: Stop isolated API and worker
+        if: always()
+        run: if [ -f .env.e2e ]; then docker compose --env-file .env.e2e --project-name failurecast-e2e down; fi
+      - name: Stop restored recovery drill
+        if: always()
+        run: if [ -f .env.e2e ]; then FAILURECAST_PORT=18101 FAILURECAST_DATA_DIR=./.e2e-restore/data FAILURECAST_ARTIFACT_DIR=./.e2e-restore/artifacts FAILURECAST_ALLOWED_ORIGINS=http://127.0.0.1:18101 docker compose --env-file .env.e2e --project-name failurecast-e2e-restored down; fi

@@ -48,7 +48,8 @@ def init_db() -> None:
         );
         CREATE TABLE IF NOT EXISTS replay_sessions (
             id TEXT PRIMARY KEY, engine_id TEXT NOT NULL, position INTEGER NOT NULL, speed REAL NOT NULL,
-            status TEXT NOT NULL, history TEXT NOT NULL, latest TEXT, created_at TEXT NOT NULL
+            status TEXT NOT NULL, history TEXT NOT NULL, latest TEXT, created_at TEXT NOT NULL,
+            dataset_id TEXT, model_id TEXT
         );
         CREATE TABLE IF NOT EXISTS sessions (
             id TEXT PRIMARY KEY, expires_at INTEGER NOT NULL, created_at INTEGER NOT NULL
@@ -64,6 +65,10 @@ def init_db() -> None:
         model_columns = {row[1] for row in db.execute("PRAGMA table_info(models)")}
         if "training_job_id" not in model_columns:
             db.execute("ALTER TABLE models ADD COLUMN training_job_id TEXT")
+        replay_columns = {row[1] for row in db.execute("PRAGMA table_info(replay_sessions)")}
+        for name in ("dataset_id", "model_id"):
+            if name not in replay_columns:
+                db.execute(f"ALTER TABLE replay_sessions ADD COLUMN {name} TEXT")
         db.execute("UPDATE training_jobs SET status='failed', finished_at=COALESCE(finished_at, datetime('now')), error='Interrupted job requires resubmission.' WHERE status IN ('queued','running') AND dataset_id IS NULL")
         db.execute("UPDATE models SET status='approved' WHERE status='active' AND id != (SELECT id FROM models WHERE status='active' ORDER BY created_at DESC, id DESC LIMIT 1)")
         db.executescript("""

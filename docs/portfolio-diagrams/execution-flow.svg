@@ -72,9 +72,9 @@
 <rect x="546" y="690" width="370" height="175" rx="18" fill="#FFFFFF" stroke="#D9E2EC" stroke-width="2"/>
 <rect x="546" y="690" width="7" height="175" rx="3.5" fill="#356AE6"/>
 <text x="570" y="729" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="19" font-weight="680" fill="#15263D" text-anchor="start" letter-spacing="0">Fit and validate</text>
-<text x="570" y="763" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Training-only trajectories; engine-bounded windows</text>
-<text x="570" y="790" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Seeded 80/20 holdout by engine ID</text>
-<text x="570" y="817" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Baseline / tree models; optional 30-cycle LSTM</text>
+<text x="570" y="763" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Train-only labels; engine-bounded features</text>
+<text x="570" y="790" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Seeded 80/20 holdout; point at 80% life</text>
+<text x="570" y="817" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">Final artifact refit on all train engines</text>
 <text x="570" y="844" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="400" fill="#607086" text-anchor="start" letter-spacing="0">MAE · RMSE · bias · NASA score</text>
 <path d="M731 865 L731 895" fill="none" stroke="#356AE6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
 <rect x="546" y="895" width="370" height="140" rx="18" fill="#FFFFFF" stroke="#D9E2EC" stroke-width="2"/>

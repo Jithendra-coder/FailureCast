@@ -26,6 +26,7 @@ def client(tmp_path, monkeypatch):
     ml.MODEL_DIR.mkdir()
     ml.EXPERIMENT_DIR.mkdir()
     ml.MODEL_CACHE.clear()
+    monkeypatch.setattr(ml, "log_mlflow", lambda *_args: {"warning": "tracking disabled in tests"})
     monkeypatch.setenv("MLFLOW_TRACKING_URI", f"sqlite:///{(tmp_path / 'mlflow.db').as_posix()}")
     with TestClient(app) as test_client:
         yield test_client
@@ -44,10 +45,12 @@ def test_readiness_fails_when_the_stored_dataset_could_not_be_restored(client):
     main.app.state.startup_dataset_error = "stored dataset is unavailable"
 
     response = client.get("/api/v1/ready")
+    inference = client.get("/api/v1/engines")
 
     main.app.state.startup_dataset_error = None
     assert response.status_code == 503
     assert response.json()["detail"] == "The stored dataset could not be restored."
+    assert inference.status_code == 503
 
 
 def test_dataset_import_is_validated_versioned_and_reusable(client, tmp_path, monkeypatch):
@@ -74,6 +77,55 @@ def test_dataset_import_is_validated_versioned_and_reusable(client, tmp_path, mo
     assert reused.status_code == 201
     assert reused.json()["id"] == imported.json()["id"]
     assert reused.json()["reused"] is True
+
+    (dataset_dir / "train_FD001.txt").write_bytes(b"modified after import")
+    row = db.one("SELECT * FROM datasets WHERE id=?", (imported.json()["id"],))
+    with pytest.raises(ValueError, match="SHA-256 fingerprint"):
+        main.load_uploaded_dataset(row)
+
+
+def test_import_train_promote_and_evaluate_uses_the_same_dataset_version(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "ROOT", tmp_path)
+    monkeypatch.setattr(main, "RAW_DIR", tmp_path / "data" / "raw")
+    files = [("files", (name, content, "text/plain")) for name, content in {
+        "train_FD001.txt": cmapss_bytes(1, 2, 3, 4),
+        "test_FD001.txt": cmapss_bytes(10, 11),
+        "RUL_FD001.txt": b"5\n7\n",
+    }.items()]
+
+    imported = client.post("/api/v1/datasets/import", data={"subset": "FD001"}, files=files)
+    assert imported.status_code == 201
+    assert client.get("/api/v1/engines").status_code == 409
+    assert client.get("/api/v1/overview").json()["model_ready"] is False
+
+    queued = client.post("/api/v1/training/jobs", json={"algorithm": "MeanBaseline"})
+    assert queued.status_code == 202
+    assert queued.json()["dataset_id"] == imported.json()["id"]
+    assert worker.run_once("dataset-e2e-test") is True
+    job = client.get(f"/api/v1/training/jobs/{queued.json()['id']}").json()
+    candidate_id = job["result"]["model_id"]
+    candidate = client.post(f"/api/v1/models/{candidate_id}/promote", json={"approved": True})
+    evaluation = client.post(f"/api/v1/models/{candidate_id}/evaluate")
+
+    assert candidate.status_code == 200
+    assert evaluation.status_code == 200
+    assert evaluation.json()["dataset_id"] == imported.json()["id"]
+    assert evaluation.json()["test_engines"] == 2
+    assert evaluation.json()["simulation_only"] is False
+
+
+def test_promotion_rejects_a_missing_candidate_artifact_without_switching_active_model(client):
+    queued = client.post("/api/v1/training/jobs", json={"algorithm": "MeanBaseline"}).json()
+    assert worker.run_once("missing-artifact-test") is True
+    candidate_id = client.get(f"/api/v1/training/jobs/{queued['id']}").json()["result"]["model_id"]
+    candidate = db.one("SELECT * FROM models WHERE id=?", (candidate_id,))
+    active_before = db.one("SELECT id FROM models WHERE status='active'")["id"]
+    (ml.ROOT / candidate["artifact_path"]).unlink()
+
+    response = client.post(f"/api/v1/models/{candidate_id}/promote", json={"approved": True})
+
+    assert response.status_code == 409
+    assert db.one("SELECT id FROM models WHERE status='active'")["id"] == active_before
 
 
 def test_replay_and_reversible_drift_simulation(client):
