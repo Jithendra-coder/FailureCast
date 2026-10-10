@@ -6,6 +6,15 @@ from backend.app.main import MAX_REQUEST_BYTES, RequestBodyLimitMiddleware, app,
 from backend.app import worker
 
 
+def cmapss_bytes(*engine_ids):
+    lines = []
+    for engine_id in engine_ids:
+        for cycle in range(1, 4):
+            values = [engine_id, cycle, .1, .2, .3, *[float(cycle)] * 21]
+            lines.append(" ".join(map(str, values)))
+    return ("\n".join(lines) + "\n").encode()
+
+
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     for key in ("FAILURECAST_ENV", "FAILURECAST_ADMIN_PASSWORD", "FAILURECAST_SECRET_KEY", "FAILURECAST_COOKIE_SECURE"):
@@ -39,6 +48,32 @@ def test_readiness_fails_when_the_stored_dataset_could_not_be_restored(client):
     main.app.state.startup_dataset_error = None
     assert response.status_code == 503
     assert response.json()["detail"] == "The stored dataset could not be restored."
+
+
+def test_dataset_import_is_validated_versioned_and_reusable(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "ROOT", tmp_path)
+    monkeypatch.setattr(main, "RAW_DIR", tmp_path / "data" / "raw")
+    source_files = {
+        "train_FD001.txt": cmapss_bytes(1, 2, 3),
+        "test_FD001.txt": cmapss_bytes(10, 11),
+        "RUL_FD001.txt": b"5\n7\n",
+    }
+    files = [("files", (name, content, "text/plain")) for name, content in source_files.items()]
+
+    imported = client.post("/api/v1/datasets/import", data={"subset": "FD001"}, files=files)
+
+    assert imported.status_code == 201
+    assert imported.json()["active"] is True
+    assert imported.json()["reused"] is False
+    dataset_dir = main.RAW_DIR / imported.json()["id"]
+    assert {path.name: path.read_bytes() for path in dataset_dir.iterdir()} == source_files
+    assert client.get("/api/v1/overview").json()["dataset"]["id"] == imported.json()["id"]
+
+    reused = client.post("/api/v1/datasets/import", data={"subset": "FD001"}, files=files)
+
+    assert reused.status_code == 201
+    assert reused.json()["id"] == imported.json()["id"]
+    assert reused.json()["reused"] is True
 
 
 def test_replay_and_reversible_drift_simulation(client):
@@ -104,6 +139,26 @@ def test_training_job_survives_api_queue_and_is_completed_by_worker(client):
     assert job["status"] == "completed"
     assert job["dataset_id"] == "demo-fd001-v1"
     assert job["result"]["algorithm"] == "MeanBaseline"
+
+
+def test_candidate_requires_approval_and_can_be_evaluated_and_rolled_back(client):
+    queued = client.post("/api/v1/training/jobs", json={"algorithm": "MeanBaseline"}).json()
+    assert worker.run_once("registry-workflow-test") is True
+    model_id = client.get(f"/api/v1/training/jobs/{queued['id']}").json()["result"]["model_id"]
+
+    denied = client.post(f"/api/v1/models/{model_id}/promote", json={"approved": False})
+    assert denied.status_code == 422
+    promoted = client.post(f"/api/v1/models/{model_id}/promote", json={"approved": True})
+    assert promoted.status_code == 200
+    evaluation = client.post(f"/api/v1/models/{model_id}/evaluate")
+    assert evaluation.status_code == 200
+    assert evaluation.json()["simulation_only"] is True
+    assert evaluation.json()["test_engines"] == 16
+
+    rolled_back = client.post("/api/v1/models/rollback")
+    assert rolled_back.status_code == 200
+    assert rolled_back.json()["id"] != model_id
+    assert next(model for model in client.get("/api/v1/models").json()["items"] if model["id"] == model_id)["status"] == "approved"
 
 
 def test_worker_recovery_reuses_candidate_registered_before_restart(client):

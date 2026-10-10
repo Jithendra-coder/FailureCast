@@ -94,7 +94,7 @@ The worker registers a candidate; it never silently replaces the active model. A
 
 - **Sources inspected:** `README.md`, `docs/architecture.md`, `docs/data-governance.md`, `docs/model-card.md`, `docker-compose.yml`, `Dockerfile`, `frontend/package.json`, `frontend/src/App.tsx`, `backend/app/main.py`, `backend/app/data.py`, `backend/app/db.py`, `backend/app/ml.py`, `backend/app/security.py`, and `backend/app/worker.py`.
 - **Source-verified:** Compose defines one API process and one worker; FastAPI serves the React/Vite bundle; authentication, origin checks, upload validation, SQLite job handling, engine holdout, model promotion, replay persistence, and drift review are implemented in the inspected code.
-- **Checks run for this audit:** 23 backend tests passed; the frontend production build and Python compilation passed; `pip check` passed; Compose configuration parsed with the default and tracking profiles.
+- **Checks run for this audit:** 25 backend tests passed; the frontend production build and Python compilation passed; `pip check` passed; Compose configuration parsed with the default and tracking profiles.
 - **Not runtime-verified:** containers were not started in this environment, and no official C-MAPSS files were imported. The local registry contained generated demo data only, so the recorded model metrics are not NASA results.
 - **Excluded:** components not present in the code, including hosted databases, Redis/message brokers, distributed tracing, external NASA APIs, LLMs/agents, and vector search.
 - **Uncertainties:** no assumptions about undocumented framework-selection rationale or production usage beyond the checked Docker Compose configuration are presented as fact.
