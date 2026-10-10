@@ -1,6 +1,6 @@
 import pytest
 
-from backend.app.data import CMAPSS_COLUMNS, feature_vector, parse_cmapss, parse_rul, training_examples, validate_records
+from backend.app.data import CMAPSS_COLUMNS, MAX_IMPORT_FILE_BYTES, feature_vector, parse_cmapss, parse_rul, training_examples, validate_records
 
 
 def rows_for(*engine_ids: int) -> bytes:
@@ -39,6 +39,14 @@ def test_rul_labels_are_non_negative_whole_cycles():
     assert parse_rul(b"5\n0\n", "RUL_FD001.txt") == [5, 0]
     with pytest.raises(ValueError, match="non-negative whole"):
         parse_rul(b"-1\n", "RUL_FD001.txt")
+
+
+def test_source_parsers_reject_files_over_the_import_limit():
+    oversized = bytes(MAX_IMPORT_FILE_BYTES + 1)
+    with pytest.raises(ValueError, match="20 MB file limit"):
+        parse_cmapss(oversized, "train_FD001.txt")
+    with pytest.raises(ValueError, match="20 MB file limit"):
+        parse_rul(oversized, "RUL_FD001.txt")
 
 
 def test_trailing_features_and_targets_stay_within_engine():

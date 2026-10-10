@@ -51,6 +51,7 @@ services:
   mlflow:
     <<: *app
     command: ["mlflow", "ui", "--backend-store-uri", "sqlite:////app/artifacts/mlflow.db", "--host", "0.0.0.0", "--port", "5000"]
+    profiles: ["tracking"]
     ports:
       - "127.0.0.1:5000:5000"
     depends_on:

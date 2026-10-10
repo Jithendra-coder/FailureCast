@@ -18,15 +18,15 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from . import db
-from .data import SENSORS, SETTINGS, feature_vector, generate_demo_records, make_dataset_engines, parse_cmapss, parse_rul, sha256, validate_records
+from .data import MAX_IMPORT_FILE_BYTES, MAX_IMPORT_TOTAL_BYTES, SENSORS, SETTINGS, feature_vector, generate_demo_records, make_dataset_engines, parse_cmapss, parse_rul, sha256, validate_records
 from .ml import bootstrap_model, load_estimator, metrics_for, predict, utcnow
 from . import security
 
 ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = ROOT / "data" / "raw"
-MAX_FILE_BYTES = 20 * 1024 * 1024
+MAX_FILE_BYTES = MAX_IMPORT_FILE_BYTES
 MAX_REQUEST_BYTES = 2 * 1024 * 1024
-MAX_UPLOAD_BODY_BYTES = 42 * 1024 * 1024
+MAX_UPLOAD_BODY_BYTES = MAX_IMPORT_TOTAL_BYTES + 2 * 1024 * 1024
 ALERT_THRESHOLDS = {"critical": int(os.getenv("FAILURECAST_CRITICAL_CYCLES", "15")),
                     "warning": int(os.getenv("FAILURECAST_WARNING_CYCLES", "30")),
                     "watch": int(os.getenv("FAILURECAST_WATCH_CYCLES", "60"))}
@@ -290,6 +290,8 @@ def health():
 
 @app.get("/api/v1/ready")
 def ready():
+    if getattr(app.state, "startup_dataset_error", None):
+        raise HTTPException(503, "The stored dataset could not be restored.")
     try:
         db.one("SELECT 1 AS ready")
         load_estimator(active_model())
@@ -409,8 +411,8 @@ async def import_dataset(files: list[UploadFile] = File(...), subset: str = Form
             raise HTTPException(422, f"Upload only the three expected files: {', '.join(sorted(expected))}.")
         content = await upload.read(MAX_FILE_BYTES + 1)
         total += len(content)
-        if len(content) > MAX_FILE_BYTES or total > 40 * 1024 * 1024:
-            raise HTTPException(413, "Dataset import exceeds the 20 MB per-file or 40 MB total limit.")
+        if len(content) > MAX_FILE_BYTES or total > MAX_IMPORT_TOTAL_BYTES:
+            raise HTTPException(413, f"Dataset import exceeds the {MAX_FILE_BYTES // (1024 * 1024)} MB per-file or {MAX_IMPORT_TOTAL_BYTES // (1024 * 1024)} MB total limit.")
         contents[filename] = content
     if set(contents) != expected:
         raise HTTPException(422, f"Upload all three files: {', '.join(sorted(expected))}.")
@@ -702,7 +704,8 @@ def drift():
     baseline = current_dataset()["train_records"]
     if not baseline:
         raise HTTPException(409, "No baseline observations are available.")
-    reference = np.asarray([[row[name] for name in SENSORS] for row in baseline[-min(2000, len(baseline)):]], dtype=float)
+    sample_indices = np.linspace(0, len(baseline) - 1, min(2000, len(baseline)), dtype=int)
+    reference = np.asarray([[baseline[index][name] for name in SENSORS] for index in sample_indices], dtype=float)
     engine = current_dataset()["engines"][0]
     current = np.asarray([[row[name] for row in engine["history"][-12:]] for name in SENSORS], dtype=float).T
     base_mean, base_std = reference.mean(axis=0), reference.std(axis=0)

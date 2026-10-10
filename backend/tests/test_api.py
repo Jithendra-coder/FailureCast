@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app import db, ml
+from backend.app import db, main, ml
 from backend.app.main import MAX_REQUEST_BYTES, RequestBodyLimitMiddleware, app, startup
 from backend.app import worker
 
@@ -31,6 +31,16 @@ def test_health_overview_and_prediction_validation(client):
     assert invalid.status_code == 422
 
 
+def test_readiness_fails_when_the_stored_dataset_could_not_be_restored(client):
+    main.app.state.startup_dataset_error = "stored dataset is unavailable"
+
+    response = client.get("/api/v1/ready")
+
+    main.app.state.startup_dataset_error = None
+    assert response.status_code == 503
+    assert response.json()["detail"] == "The stored dataset could not be restored."
+
+
 def test_replay_and_reversible_drift_simulation(client):
     replay = client.post("/api/v1/replay/sessions", json={"engine_id": "ENG-001", "speed": 1}).json()
     stepped = client.post(f"/api/v1/replay/{replay['id']}/step").json()
@@ -40,6 +50,20 @@ def test_replay_and_reversible_drift_simulation(client):
     assert client.get("/api/v1/monitoring/drift").json()["status"] == "investigate"
     client.post("/api/v1/monitoring/drift/simulate", json={"enabled": False})
     assert client.get("/api/v1/monitoring/drift").json()["simulation"] is None
+
+
+def test_drift_baseline_samples_the_full_sorted_training_history(client, monkeypatch):
+    from backend.app.data import SENSORS
+
+    rows = [{sensor: value for sensor in SENSORS} for value in (0.0,) * 1000 + (100.0,) * 2000]
+    history = [{sensor: 0.0 for sensor in SENSORS} for _ in range(12)]
+    monkeypatch.setattr(main, "current_dataset", lambda: {"train_records": rows, "engines": [{"history": history}]})
+
+    report = client.get("/api/v1/monitoring/drift").json()
+
+    sensor = next(item for item in report["items"] if item["sensor"] == "sensor_2")
+    assert sensor["shift_sigma"] < 3
+    assert report["status"] == "stable"
 
 
 def test_admin_session_protects_api_and_can_be_revoked(client, monkeypatch):

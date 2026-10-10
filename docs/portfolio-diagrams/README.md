@@ -43,7 +43,7 @@ The candidate artifact and registry row are separate from the active model. Prom
 - A training request creates a SQLite job and returns `202`; the separate worker discovers it by polling. Job status and result return through SQLite and API reads, not through a message broker or streaming channel.
 - The API uses the active model for engine estimates and replay steps. Explicit prediction writes and replay steps persist prediction rows; threshold alerts are created for non-normal severity, with duplicate open alerts suppressed for the same engine and severity.
 - Replay sessions and their progress are persisted in SQLite. The browser advances replay through request/response calls; this is not a telemetry stream.
-- `/api/v1/health` is liveness; `/api/v1/ready` checks the database, active model, and current dataset. Compose restarts services unless stopped. Training exceptions are written to the job row and logged by the worker.
+- `/api/v1/health` is liveness; `/api/v1/ready` checks the database, active model, and current dataset, and reports not-ready if an imported dataset could not be restored at startup. Compose restarts services unless stopped. Training exceptions are written to the job row and logged by the worker.
 - Compose runs one API process and one worker on one host. The API and MLflow host ports bind to loopback. The containers run as non-root with a read-only root filesystem, dropped capabilities, `no-new-privileges`, a PID limit, and a restricted temporary filesystem. The README recommends a TLS reverse proxy before any remote access.
 
 ### Engineering trade-offs and limitations
@@ -68,7 +68,7 @@ The flow traces an imported dataset through a user-started training job, human m
 8. Engine overview/history and replay use the active estimator in the API process. The direct prediction endpoint validates required fields, finite numbers, increasing cycles, and the 120-row limit. If the active model cannot load or predict, the API returns `503` without an estimate.
 9. The overview returns current engine estimates. Direct prediction writes and replay steps record a prediction in SQLite and create a threshold alert when severity is not normal. An open alert of the same engine and severity is suppressed. The response is JSON; the React workspace refreshes data every 12 seconds. Replay advances through request/response step calls and persists its session state.
 
-The monitoring endpoint compares the last 12 sensor observations with a training-data baseline drawn from up to 2,000 observations. A shift of at least three standard deviations is a prompt to investigate, not evidence of failure and not an automatic retraining or promotion action. The separate reversible drift demonstration changes in-memory monitoring state only. Local feature perturbation reports sensitivity; it is not a causal explanation.
+The monitoring endpoint compares the last 12 sensor observations with an evenly spaced sample of up to 2,000 rows across the ordered training history. A shift of at least three standard deviations is a prompt to investigate, not evidence of failure and not an automatic retraining or promotion action. The separate reversible drift demonstration changes in-memory monitoring state only. Local feature perturbation reports sensitivity; it is not a causal explanation.
 
 ## Interview preparation
 
@@ -93,7 +93,9 @@ The worker registers a candidate; it never silently replaces the active model. A
 ## Validation summary
 
 - **Sources inspected:** `README.md`, `docs/architecture.md`, `docs/data-governance.md`, `docs/model-card.md`, `docker-compose.yml`, `Dockerfile`, `frontend/package.json`, `frontend/src/App.tsx`, `backend/app/main.py`, `backend/app/data.py`, `backend/app/db.py`, `backend/app/ml.py`, `backend/app/security.py`, and `backend/app/worker.py`.
-- **Verified:** one API process and worker in Docker Compose; React/Vite bundle served by FastAPI; admin session and origin handling; dataset schema/size/commit behavior; SQLite WAL job queue; worker claim/restart/failure paths; engine holdout; local estimator/experiment storage; MLflow local tracking; explicit model promotion; prediction thresholds; replay persistence; drift review behavior.
+- **Source-verified:** Compose defines one API process and one worker; FastAPI serves the React/Vite bundle; authentication, origin checks, upload validation, SQLite job handling, engine holdout, model promotion, replay persistence, and drift review are implemented in the inspected code.
+- **Checks run for this audit:** 23 backend tests passed; the frontend production build and Python compilation passed; `pip check` passed; Compose configuration parsed with the default and tracking profiles.
+- **Not runtime-verified:** containers were not started in this environment, and no official C-MAPSS files were imported. The local registry contained generated demo data only, so the recorded model metrics are not NASA results.
 - **Excluded:** components not present in the code, including hosted databases, Redis/message brokers, distributed tracing, external NASA APIs, LLMs/agents, and vector search.
 - **Uncertainties:** no assumptions about undocumented framework-selection rationale or production usage beyond the checked Docker Compose configuration are presented as fact.
 - **Rendering checks:** both editable SVG masters were exported as 2400 px wide PNGs at 1.25×. SVG XML parsed successfully; PNG dimensions were verified; both full-size renders were visually inspected for clipping, overlap, and layout defects.

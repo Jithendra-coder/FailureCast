@@ -99,7 +99,7 @@ def fit_candidate(records: list[dict], algorithm: str, dataset_id: str | None = 
     estimator = make_estimator(algorithm)
     estimator.fit(np.asarray(train_X, dtype=np.float32), np.asarray(train_y, dtype=np.float32))
     val_X, val_y, _ = training_examples([row for row in records if row["engine_id"] in validation_ids])
-    val_pred = estimator.predict(np.asarray(val_X, dtype=np.float32)).tolist()
+    val_pred = np.clip(estimator.predict(np.asarray(val_X, dtype=np.float32)), 0, None).tolist()
     metrics = metrics_for(val_y, val_pred)
     metrics["validation_engines"] = len(validation_ids)
     metrics["training_engines"] = len(engine_ids) - len(validation_ids)
@@ -270,7 +270,7 @@ def train_lstm(records: list[dict], dataset_id: str | None = None, training_job_
                 "input_size": x_train.shape[-1], "sequence_length": 30,
                 "mean": train_mean.cpu().tolist(), "std": train_std.cpu().tolist()}, artifact)
     with torch.no_grad():
-        val_pred = model(x_val).squeeze(1).cpu().numpy().tolist()
+        val_pred = np.clip(model(x_val).squeeze(1).cpu().numpy(), 0, None).tolist()
     metrics = metrics_for(y_val.tolist(), val_pred)
     metrics.update({"validation_engines": len(validation_ids), "training_engines": len(ids) - len(validation_ids),
                     "duration_seconds": round(time.perf_counter() - started, 2), "validation_split": "engine_id holdout (80/20)",

@@ -10,6 +10,8 @@ SETTINGS = [f"setting_{i}" for i in range(1, 4)]
 SENSORS = [f"sensor_{i}" for i in range(1, 22)]
 FEATURES = SETTINGS + SENSORS + ["cycle"] + [f"sensor_{i}_{suffix}" for i in range(1, 22) for suffix in ("mean5", "delta5")]
 CMAPSS_COLUMNS = ["engine_id", "cycle", *SETTINGS, *SENSORS]
+MAX_IMPORT_FILE_BYTES = 20 * 1024 * 1024
+MAX_IMPORT_TOTAL_BYTES = 40 * 1024 * 1024
 
 
 def sha256(data: bytes) -> str:
@@ -18,6 +20,8 @@ def sha256(data: bytes) -> str:
 
 def parse_cmapss(data: bytes, filename: str) -> list[dict]:
     """Parse the official whitespace-delimited C-MAPSS format without trusting filenames or rows."""
+    if len(data) > MAX_IMPORT_FILE_BYTES:
+        raise ValueError(f"{filename} exceeds the {MAX_IMPORT_FILE_BYTES // (1024 * 1024)} MB file limit.")
     rows: list[dict] = []
     text = data.decode("utf-8-sig")
     for line_no, line in enumerate(text.splitlines(), 1):
@@ -43,6 +47,8 @@ def parse_cmapss(data: bytes, filename: str) -> list[dict]:
 
 
 def parse_rul(data: bytes, filename: str) -> list[int]:
+    if len(data) > MAX_IMPORT_FILE_BYTES:
+        raise ValueError(f"{filename} exceeds the {MAX_IMPORT_FILE_BYTES // (1024 * 1024)} MB file limit.")
     values = []
     for line_no, line in enumerate(data.decode("utf-8-sig").splitlines(), 1):
         if not line.strip():

@@ -33,14 +33,16 @@ Open the Vite URL (usually `http://127.0.0.1:5173`). The dashboard starts in **s
 
 ## Production deployment
 
-The self-hosted Compose deployment enables password authentication, serves the UI and API from one origin, runs the API as a non-root user, and separates model training into a restartable worker. The API and MLflow UI ports bind to loopback. Do not expose them directly to the internet; put them behind a TLS reverse proxy with an access policy and set `FAILURECAST_COOKIE_SECURE=true`.
+The self-hosted Compose deployment enables password authentication, serves the UI and API from one origin, runs the API as a non-root user, and separates model training into a restartable worker. The API and optional MLflow UI ports bind to loopback. Do not expose them directly to the internet; put them behind a TLS reverse proxy with an access policy and set `FAILURECAST_COOKIE_SECURE=true`.
 
 1. Copy `.env.example` to `.env` and replace both example credentials. Use a unique administrator passphrase (at least 14 characters) and generate a session secret with `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
 2. On Linux, set `FAILURECAST_UID` and `FAILURECAST_GID` in `.env` to the owner of the `data` and `artifacts` directories (`id -u` and `id -g`). This lets the non-root containers persist files without changing directory permissions.
 3. For a reverse-proxy hostname, add its exact origin to `FAILURECAST_ALLOWED_ORIGINS`, such as `https://failurecast.example.com`.
 4. Run `docker compose up --build -d`, then open `http://127.0.0.1:8000` and sign in with the configured administrator passphrase.
 
-`GET /api/v1/health` is a liveness check and `/api/v1/ready` checks the database and active model. Production disables Swagger and OpenAPI routes. Compose runs one API process and one training worker over local SQLite and shared local files. Keep one worker; multiple API replicas, network filesystems, and concurrent cross-host writes are not supported. Back up `artifacts/` and `data/` together while the services are stopped so the registry, model files, experiment tracking, and imported source data stay consistent. Keep `.env` out of source control and store production secrets in the deployment platform's secret manager.
+`GET /api/v1/health` is a liveness check and `/api/v1/ready` checks the database, active model, and restored dataset. Production disables Swagger and OpenAPI routes. Compose runs one API process and one training worker over local SQLite and shared local files. Keep one worker; multiple API replicas, network filesystems, and concurrent cross-host writes are not supported. Back up `artifacts/` and `data/` together while the services are stopped so the registry, model files, experiment tracking, and imported source data stay consistent. Keep `.env` out of source control and store production secrets in the deployment platform's secret manager.
+
+The MLflow tracking UI is not started by default. To run it locally when needed, use `docker compose --profile tracking up -d mlflow`; it is available on `http://127.0.0.1:5000`.
 
 ## NASA C-MAPSS data
 
@@ -57,7 +59,7 @@ Training constructs capped RUL labels (cap 125) from run-to-failure **training t
 
 ## Deep learning and experiment tracking
 
-The default environment trains a mean baseline, HistGradientBoosting, or Random Forest candidates on CPU and records run configuration, metrics, and model metadata in `artifacts/experiments/`. A separate worker claims each durable SQLite job; worker restarts re-queue an interrupted run. MLflow stores run metadata in the local SQLite database `artifacts/mlflow.db` and artifacts under `artifacts/mlartifacts/` by default. Set `MLFLOW_TRACKING_URI` to select another MLflow store. Inspect local runs from the repository root with `mlflow ui --backend-store-uri sqlite:///artifacts/mlflow.db --host 127.0.0.1 --port 5000`. The built-in demonstration model is trained from generated trajectories and must not be reported as NASA evaluation.
+The default environment trains a mean baseline, HistGradientBoosting, or Random Forest candidates on CPU and records run configuration, metrics, and model metadata in `artifacts/experiments/`. A separate worker claims each durable SQLite job; worker restarts re-queue an interrupted run. MLflow stores run metadata in the local SQLite database `artifacts/mlflow.db` and artifacts under `artifacts/mlartifacts/` by default. Set `MLFLOW_TRACKING_URI` to select another MLflow store. Inspect local runs from the repository root with `mlflow ui --backend-store-uri sqlite:///artifacts/mlflow.db --host 127.0.0.1 --port 5000`, or start the optional Compose UI with the `tracking` profile. The built-in demonstration model is trained from generated trajectories and must not be reported as NASA evaluation.
 
 PyTorch is optional because its CPU wheel is substantially larger. Install it to enable the fixed-window LSTM option:
 

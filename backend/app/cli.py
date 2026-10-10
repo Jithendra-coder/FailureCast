@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from . import db
-from .data import parse_cmapss, parse_rul, sha256, validate_records
+from .data import MAX_IMPORT_FILE_BYTES, MAX_IMPORT_TOTAL_BYTES, parse_cmapss, parse_rul, sha256, validate_records
 from .ml import fit_candidate
 
 
@@ -21,7 +21,26 @@ def main() -> None:
         command.add_argument("--rul", type=Path, required=True, help="Path to RUL_FD00x.txt")
     train.add_argument("--algorithm", choices=["MeanBaseline", "HistGradientBoostingRegressor", "RandomForestRegressor"], default="HistGradientBoostingRegressor")
     args = parser.parse_args()
-    train_bytes, test_bytes, rul_bytes = args.train.read_bytes(), args.test.read_bytes(), args.rul.read_bytes()
+    expected_names = {"train": f"train_{args.subset}.txt", "test": f"test_{args.subset}.txt", "rul": f"RUL_{args.subset}.txt"}
+    paths = {"train": args.train, "test": args.test, "rul": args.rul}
+    for kind, path in paths.items():
+        if path.name != expected_names[kind]:
+            parser.error(f"--{kind} must point to {expected_names[kind]} for subset {args.subset}.")
+    contents = {}
+    total = 0
+    try:
+        for kind, path in paths.items():
+            with path.open("rb") as source:
+                content = source.read(MAX_IMPORT_FILE_BYTES + 1)
+            if len(content) > MAX_IMPORT_FILE_BYTES:
+                parser.error(f"{expected_names[kind]} exceeds the {MAX_IMPORT_FILE_BYTES // (1024 * 1024)} MB file limit.")
+            total += len(content)
+            if total > MAX_IMPORT_TOTAL_BYTES:
+                parser.error(f"Dataset import exceeds the {MAX_IMPORT_TOTAL_BYTES // (1024 * 1024)} MB total limit.")
+            contents[kind] = content
+    except OSError as exc:
+        parser.error(f"Could not read dataset files: {exc}")
+    train_bytes, test_bytes, rul_bytes = contents["train"], contents["test"], contents["rul"]
     train_rows = parse_cmapss(train_bytes, args.train.name)
     test_rows = parse_cmapss(test_bytes, args.test.name)
     rul_values = parse_rul(rul_bytes, args.rul.name)
